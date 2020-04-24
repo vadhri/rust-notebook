@@ -13,6 +13,7 @@ fn wrap_block_in_html(partial_html: &str, css: Option<&str>) -> String {
         html {
             head {
                 meta charset="utf-8";
+
                 @if let Some(css_link) = css {
                     link rel="stylesheet" type="text/css" href=(css_link) {}
                 }
@@ -38,12 +39,9 @@ fn main() {
     ).get_matches();
 
     let input_filename = args_handler.value_of("input").unwrap();
-
     let events_print = args_handler.is_present("events");
     let output_file_print = args_handler.is_present("output");
-
     let input_css = args_handler.is_present("css");
-
 
     let infile = fs::read_to_string(input_filename).expect("File not found !");
     let mut outcome = String::new();
