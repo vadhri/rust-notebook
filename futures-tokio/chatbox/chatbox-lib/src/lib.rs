@@ -22,7 +22,7 @@ pub struct ChatBox<T> {
 }
 
 impl<T> ChatBox<T> {
-    fn new() -> (Self, Sender<Command<T>>) {
+    pub fn new() -> (Self, Sender<Command<T>>) {
         let (tx, rx) = mpsc::channel::<Command<T>>(10);
 
         (ChatBox {
