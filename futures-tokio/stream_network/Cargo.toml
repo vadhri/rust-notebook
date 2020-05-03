@@ -1,0 +1,14 @@
+[package]
+name = "stream_u8_lib"
+version = "0.1.0"
+authors = ["vratnam <vadhrivenkata.ratnam@nagra.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "0.2.20", features = ["full"] }
+futures = "0.3.4"
+pin-project = "0.4.9"
+futures-core = "0.3.4"
+tokio-util = "0.3.1"

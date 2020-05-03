@@ -2,7 +2,6 @@ use tokio::net::TcpStream;
 use tokio::prelude::*;
 
 use std::fs::File;
-use std::fs;
 use std::io::prelude::*;
 
 #[tokio::main]
@@ -12,22 +11,32 @@ async fn main() {
 
     let filename = "input.txt";
     let mut f = File::open(&filename).expect("no file found");
-    let metadata = fs::metadata(&filename).expect("unable to read metadata");
-    let mut total_buffer_read = 0;
+    let mut total_buffer_written = 0;
 
     loop {
-        let mut buffer = vec![0; 64 as usize];
-
-        let n = f.read(&mut buffer).expect("buffer overflow");
+        let mut buffer = vec![0; stream.send_buffer_size().unwrap()];
+        let mut n = f.read(&mut buffer).expect("buffer overflow") as u32;
 
         if n == 0 {
             break
         }
 
-        let result = stream.write(& buffer[0..n]).await;
+        let mut bytes_written = 0;
 
-        total_buffer_read += n;
+        while n > 0 {
+            use std::{thread, time};
+            thread::sleep(time::Duration::from_secs(1));
 
-        println!("wrote to stream; success={:?}", result);
+            let result = stream.write(& buffer[bytes_written..(n as usize + bytes_written)]).await;
+            let bytes_sent = result.unwrap();
+
+            n -= bytes_sent as u32;
+            bytes_written += bytes_sent;
+
+            total_buffer_written += bytes_sent;
+
+            println!("wrote to stream; success={:?} left to send, {:?} stream.send_buffer_size().unwrap() = {:?}",n, bytes_written, stream.send_buffer_size().unwrap());
+        }
     }
+    println!("total_buffer_written = {:?}", total_buffer_written);
 }

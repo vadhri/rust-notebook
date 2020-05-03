@@ -12,7 +12,7 @@ use std::str;
 
 #[tokio::main]
 async fn main() {
-    let addr = "127.0.0.1:6142";
+    let addr = "127.0.0.1:8080";
     let mut listener = TcpListener::bind(addr).await.unwrap();
 
     let server = async move {
