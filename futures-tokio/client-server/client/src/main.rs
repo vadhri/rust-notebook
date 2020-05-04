@@ -18,16 +18,15 @@ async fn main() {
         let mut n = f.read(&mut buffer).expect("buffer overflow") as u32;
 
         if n == 0 {
-            break
+            break;
         }
 
         let mut bytes_written = 0;
 
         while n > 0 {
-            use std::{thread, time};
-            thread::sleep(time::Duration::from_secs(1));
-
-            let result = stream.write(& buffer[bytes_written..(n as usize + bytes_written)]).await;
+            let result = stream
+                .write(&buffer[bytes_written..(n as usize + bytes_written)])
+                .await;
             let bytes_sent = result.unwrap();
 
             n -= bytes_sent as u32;
@@ -38,5 +37,4 @@ async fn main() {
             println!("wrote to stream; success={:?} left to send, {:?} stream.send_buffer_size().unwrap() = {:?}",n, bytes_written, stream.send_buffer_size().unwrap());
         }
     }
-    println!("total_buffer_written = {:?}", total_buffer_written);
 }
