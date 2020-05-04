@@ -5,12 +5,9 @@ use tokio::stream::StreamExt;
 use tokio::net::TcpStream;
 use tokio::stream::Stream;
 
-use pin_project::pin_project;
-
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-#[pin_project]
 pub struct StreamReader {
     source: TcpStream,
 }
@@ -21,7 +18,7 @@ impl StreamReader {
     }
 
     pub async fn respond(self: &mut Self, s: &[u8]) {
-        self.source.write(&s).await;
+        self.source.write(&s);
         self.source.flush();
     }
 }
@@ -29,36 +26,17 @@ impl StreamReader {
 impl Stream for StreamReader {
     type Item = Vec<u8>;
 
-    fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let mut this = self.project();
-        let unpinned_source: &mut TcpStream = &mut this.source;
-        let mut bytes_read: Result<usize, io::Error> = Ok(0);
-        let mut buffer = [0; 1024];
+    fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let mut buffer = [0; 2048];
 
-        let ft = async {
-            bytes_read = unpinned_source.read(&mut buffer).await;
-        };
-
-        executor::block_on(ft);
-
-        match bytes_read {
-            Ok(n) => {
-                if n > 0 {
-                    return Poll::Ready(Some(buffer[0..n].to_vec()));
-                } else if n == 0 {
-                    return Poll::Ready(None);
-                } else {
-                    return Poll::Pending;
-                }
-            }
-            Err(_reason) => {
-                return Poll::Ready(None);
-            }
+        match Pin::new(&mut self.source).poll_read(_cx, &mut buffer) {
+            Poll::Ready(Ok(0)) => Poll::Ready(None),
+            Poll::Ready(Ok(m)) => Poll::Ready(Some(buffer[0..m].to_vec())),
+            Poll::Ready(Err(_reason)) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending
         }
     }
 }
-
-use futures::executor;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -76,18 +54,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                         while value.len() > 0 {
                             let buff_value = reader_stream.next().await;
-
                             if buff_value != None {
                                 value = buff_value.unwrap();
                                 total_bytes_transfered += value.len();
                                 reader_stream.respond(format!("{:?} bytes transferred.", value.len()).as_bytes()).await;
+                                println!("Received >> {:?}", String::from_utf8(value.clone()).unwrap());
                             } else {
                                 value.clear();
                             }
                         }
 
                         println!("{:?} bytes transferred.", total_bytes_transfered);
-
                     };
                     tokio::spawn(async_block);
                 }

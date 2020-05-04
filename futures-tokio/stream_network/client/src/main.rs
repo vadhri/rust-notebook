@@ -36,16 +36,17 @@ async fn main() {
 
             total_buffer_written += bytes_sent;
 
+            let mut data = [0u8; 1024];
+            let data_read = stream.read(&mut data).await.unwrap();
+
+            println!(">> Server Response(sent = {:?}) => {:?} ", total_buffer_written, String::from_utf8(data[0..data_read].to_vec()).unwrap());
+
+
             println!("wrote to stream; success={:?} left to send, {:?} stream.send_buffer_size().unwrap() = {:?}",n, bytes_written, stream.send_buffer_size().unwrap());
         }
     }
 
-    let mut data = [0u8; 1024];
-    let data_read = stream.read(&mut data).await.unwrap();
-
-    println!(">> Server Response(sent = {:?}) => {:?} ", total_buffer_written, String::from_utf8(data[0..data_read].to_vec()).unwrap());
-
-    println!("chat -> CTRL+D to send");
+    println!(" >> Chat -> CTRL+D to send");
 
     loop {
         let mut buffer = String::new();
