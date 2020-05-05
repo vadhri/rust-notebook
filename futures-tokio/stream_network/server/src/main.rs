@@ -18,7 +18,7 @@ impl StreamReader {
     }
 
     pub async fn respond(self: &mut Self, s: &[u8]) {
-        self.source.write(&s);
+        self.source.write(&s).await;
         self.source.flush();
     }
 }
