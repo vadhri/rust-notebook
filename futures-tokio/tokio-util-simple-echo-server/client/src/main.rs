@@ -13,6 +13,7 @@ use futures::Stream;
 
 use tokio::net::TcpListener;
 use tokio::prelude::*;
+use std::io;
 
 pub struct ByteCodec;
 
@@ -38,15 +39,34 @@ impl Encoder<&[u8]> for ByteCodec {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let mut socket = TcpStream::connect("127.0.0.1:6142").await?;
-    println!("Listening on port 6142 ..");
+    let socket = TcpStream::connect("127.0.0.1:6142").await.unwrap();
+    println!("Connected on port 6142 ..");
     let mut socket_wrapped = ByteCodec.framed(socket);
 
     loop {
         let mut buffer = String::new();
-        io::stdin().read_to_string(&mut buffer);
+        println!("INPUT>> ");
 
-        let length = socket_wrapped.send(buffer.as_bytes()).await;
-        println!("buffer length = {:?}", length);
+        match io::stdin().read_line(&mut buffer) {
+            Ok(n) => {
+                println!("{} bytes read", n);
+                println!("Send string -> {}", buffer);
+                let length = socket_wrapped.send(buffer.as_bytes()).await;
+                println!("send length = {:?}", length);
+            }
+            Err(error) => println!("error: {}", error),
+        }
+
+        let buffer = socket_wrapped.next().await.unwrap();
+        let mut rcvd = buffer.unwrap();
+
+        let length = rcvd.len();
+        if length >= 1 {
+            rcvd.truncate(length - 1);
+        }
+
+        println!("[Received] {:?}", String::from_utf8(rcvd).unwrap());
     }
+
+    Ok(())
 }

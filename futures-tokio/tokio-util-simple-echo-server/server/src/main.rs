@@ -40,24 +40,21 @@ impl Encoder<&[u8]> for ByteCodec {
 async fn main() -> std::io::Result<()> {
     let mut listener = TcpListener::bind("127.0.0.1:6142").await?;
     println!("Listening on port 6142 ..");
+
     loop {
         let (socket, addr) = listener.accept().await?;
         tokio::spawn(async move {
             let mut socket_wrapped = ByteCodec.framed(socket);
-            let buffer = socket_wrapped.next().await;
-            let length = buffer.unwrap().unwrap().len();
-            println!("buffer length = {:?}", length);
-            if length > 0 {
-                socket_wrapped
-                    .send(format!("{:?} bytes received !", length).as_bytes())
-                    .await;
+            loop {
+                let buffer = socket_wrapped.next().await;
+                let rcvd = buffer.unwrap().unwrap();
+                if rcvd.len() > 0 {
+                    println!("{:?}", String::from_utf8(rcvd.clone()).unwrap());
+                    socket_wrapped
+                        .send(String::from_utf8(rcvd).unwrap().as_bytes())
+                        .await;
+                }
             }
-            let buffer = socket_wrapped.next().await;
-            let length = buffer.unwrap().unwrap().len();
-            println!("buffer length = {:?}", length);
-            let buffer = socket_wrapped.next().await;
-            let length = buffer.unwrap().unwrap().len();
-            println!("buffer length = {:?}", length);            
         });
     }
 }
