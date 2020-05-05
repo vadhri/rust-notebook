@@ -1,0 +1,13 @@
+[package]
+name = "client"
+version = "0.1.0"
+authors = ["vratnam <vadhrivenkata.ratnam@nagra.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio-util = { version= "0.3.1", features=["codec", "udp", "compat"]}
+tokio = { version= "0.2.20", features=["full"]}
+bytes = "0.5.4"
+futures = "0.3.4"
