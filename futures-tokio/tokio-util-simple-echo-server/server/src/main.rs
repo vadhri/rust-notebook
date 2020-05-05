@@ -1,15 +1,8 @@
-use tokio::io::AsyncReadExt;
-use tokio::io::AsyncWriteExt;
-use tokio::{net::TcpStream, net::UdpSocket, stream::StreamExt};
-use tokio_util::codec::{Decoder, Encoder, Framed, FramedRead, FramedWrite};
-use tokio_util::udp::UdpFramed;
+use tokio::stream::StreamExt;
+use tokio_util::codec::{Decoder, Encoder};
 
 use bytes::{BufMut, BytesMut};
-use futures::future::try_join;
-use futures::future::FutureExt;
 use futures::sink::SinkExt;
-
-use futures::Stream;
 
 use tokio::net::TcpListener;
 use tokio::prelude::*;
@@ -42,19 +35,32 @@ async fn main() -> std::io::Result<()> {
     println!("Listening on port 6142 ..");
 
     loop {
-        let (socket, addr) = listener.accept().await?;
-        tokio::spawn(async move {
-            let mut socket_wrapped = ByteCodec.framed(socket);
-            loop {
-                let buffer = socket_wrapped.next().await;
-                let rcvd = buffer.unwrap().unwrap();
-                if rcvd.len() > 0 {
-                    println!("{:?}", String::from_utf8(rcvd.clone()).unwrap());
-                    socket_wrapped
-                        .send(String::from_utf8(rcvd).unwrap().as_bytes())
-                        .await;
+        let (socket, _) = listener.accept().await?;
+        let mut socket_wrapped = ByteCodec.framed(socket);
+
+        loop {
+            let buffer = socket_wrapped.next().await;
+            let rcvd = buffer.unwrap().unwrap();
+            println!(
+                "Socket buffer -> {:?}",
+                String::from_utf8(rcvd.clone()).unwrap()
+            );
+            if rcvd.len() > 0 {
+                match socket_wrapped
+                    .send(String::from_utf8(rcvd).unwrap().as_bytes())
+                    .await
+                {
+                    Ok(()) => {
+                        let _ignore = socket_wrapped.flush().await;
+                    }
+                    _rest => {
+                        break;
+                    }
                 }
+            } else {
+                println!("zero bytes {:?}", rcvd.len());
+                break;
             }
-        });
+        }
     }
 }
