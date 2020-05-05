@@ -1,10 +1,10 @@
 use tokio::{net::TcpStream};
-use tokio_util::codec::{Decoder, Encoder, Framed, BytesCodec};
+use tokio_util::codec::{Framed, BytesCodec};
 
-use bytes::{BufMut, BytesMut};
 use futures::sink::SinkExt;
 
 use std::io;
+use tokio::stream::StreamExt;
 
 use std::io::Read;
 use bytes::Bytes;
@@ -18,6 +18,8 @@ async fn main() -> std::io::Result<()> {
         let mut buffer = String::new();
         let _res = io::stdin().read_to_string(&mut buffer)?;
 
+        buffer.truncate(buffer.len() - 1);
+
         match _res {
             n if n > 0 => {
                 let _res = socket_wrapped.send(Bytes::from(buffer)).await;
@@ -27,6 +29,13 @@ async fn main() -> std::io::Result<()> {
                 break
             }
         }
+
+        let buffer = socket_wrapped.next().await;
+        let rcvd = buffer.unwrap().unwrap();
+        println!(
+            "Socket buffer -> {:?}",
+            String::from_utf8(rcvd.to_vec()).unwrap()
+        );
     }
 
     Ok(())
