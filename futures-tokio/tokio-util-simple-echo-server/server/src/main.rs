@@ -19,26 +19,34 @@ async fn main() -> std::io::Result<()> {
 
         loop {
             let buffer = socket_wrapped.next().await;
-            let rcvd = buffer.unwrap().unwrap();
-            println!(
-                "Socket buffer -> {:?}",
-                String::from_utf8(rcvd.to_vec()).unwrap()
-            );
-            if rcvd.len() > 0 {
-                match socket_wrapped
-                    .send(rcvd.freeze())
-                    .await
-                {
-                    Ok(()) => {
-                        let _ignore = socket_wrapped.flush().await;
-                    }
-                    _rest => {
+            match buffer {
+                Some(_value) => {
+                    let rcvd = _value.unwrap();
+                    println!(
+                        "Socket buffer -> {:?}",
+                        String::from_utf8(rcvd.to_vec()).unwrap()
+                    );
+                    if rcvd.len() > 0 {
+                        match socket_wrapped
+                            .send(rcvd.freeze())
+                            .await
+                        {
+                            Ok(()) => {
+                                let _ignore = socket_wrapped.flush().await;
+                            }
+                            _rest => {
+                                break;
+                            }
+                        }
+                    } else {
+                        println!("zero bytes {:?}", rcvd.len());
                         break;
                     }
+                },
+                None => {
+                    println!("That's unfortunate !");
+                    break;
                 }
-            } else {
-                println!("zero bytes {:?}", rcvd.len());
-                break;
             }
         }
     }

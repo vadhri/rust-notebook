@@ -9,18 +9,23 @@ use tokio::stream::StreamExt;
 use std::io::Read;
 use bytes::Bytes;
 
+use tokio::task;
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let socket = TcpStream::connect("127.0.0.1:6142").await.unwrap();
     let mut socket_wrapped = Framed::new(socket, BytesCodec::new());
 
     loop {
-        let mut buffer = String::new();
-        let _res = io::stdin().read_to_string(&mut buffer)?;
+        let mut buffer = task::spawn_blocking(|| {
+            let mut input_string = String::new();
+            io::stdin().read_to_string(&mut input_string);
+            input_string
+        }).await?;
 
         buffer.truncate(buffer.len() - 1);
 
-        match _res {
+        match buffer.len() {
             n if n > 0 => {
                 let _res = socket_wrapped.send(Bytes::from(buffer)).await;
                 let _res = socket_wrapped.flush().await;
