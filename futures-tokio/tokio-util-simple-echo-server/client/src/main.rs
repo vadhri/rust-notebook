@@ -17,11 +17,11 @@ async fn main() -> std::io::Result<()> {
     let mut socket_wrapped = Framed::new(socket, BytesCodec::new());
 
     loop {
-        let mut buffer = task::spawn_blocking(|| {
+        let mut buffer = task::spawn_blocking(|| -> Result<String, io::Error> {
             let mut input_string = String::new();
-            io::stdin().read_to_string(&mut input_string);
-            input_string
-        }).await?;
+            io::stdin().read_to_string(&mut input_string)?;
+            Ok(input_string)
+        }).await?.unwrap();
 
         buffer.truncate(buffer.len() - 1);
 
