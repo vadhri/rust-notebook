@@ -120,9 +120,7 @@ static GLOBAL_THREAD_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
 
 fn main() {
     dotenv().ok();
-
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set in the .env file.");
-
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = r2d2::Pool::builder().build(manager).expect("Failed to create pool.");
 
@@ -130,12 +128,10 @@ fn main() {
 
     for _ in 0..1 {
         let pool = pool.clone();
-        println!("connnexion");
 
         let t1 = thread::spawn(move || {
             let connection = pool.get();
             GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::SeqCst);
-            println!("connnexion");
 
             if connection.is_ok() {
                 establish_connection(connection.unwrap().deref());
