@@ -62,6 +62,10 @@ pub enum MyEnum {
     G,
     #[db_rename = "PG"]
     PG,
+    #[db_rename = "PG-13"]
+    PG13,
+    #[db_rename = "R"]
+    R,
     #[db_rename = "NC-17"]
     NC17
 }
@@ -130,7 +134,7 @@ pub struct Staff {
     pub first_name: String,
     pub last_name: String,
     pub address_id: i32,
-    pub email: Option<String>, 
+    pub email: Option<String>,
     pub store_id: i32,
     pub active: bool,
     pub username: String,
