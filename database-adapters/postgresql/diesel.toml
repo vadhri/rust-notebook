@@ -1,0 +1,14 @@
+# For documentation on how to configure this file,
+# see diesel.rs/guides/configuring-diesel-cli
+
+[print_schema]
+file = "src/schema.rs"
+filter = { except_tables = ["payment",
+  "payment_p2017_01",
+  "payment_p2017_02",
+  "payment_p2017_03",
+  "payment_p2017_04",
+  "payment_p2017_05",
+  "payment_p2017_06",
+  "payment_p2017_07"
+]}
