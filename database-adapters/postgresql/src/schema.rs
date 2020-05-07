@@ -63,17 +63,12 @@ table! {
     }
 }
 
-pub enum MpaaRating {
-    G,
-    PG,
-    PG13,
-    R,
-    NC17
-}
-
 table! {
+    use crate::models::MyEnumMapping;
+    use diesel::sql_types::*;
+
     film (film_id) {
-        film_id -> Int4,
+        film_id ->Int4,
         title -> Text,
         description -> Nullable<Text>,
         release_year -> Nullable<Int4>,
@@ -83,7 +78,7 @@ table! {
         rental_rate -> Numeric,
         length -> Nullable<Int4>,
         replacement_cost -> Numeric,
-        rating -> crate::schema::MpaaRating,
+        rating -> MyEnumMapping,
         last_update -> Timestamptz,
         special_features -> Nullable<Array<Text>>,
         fulltext -> Text,
