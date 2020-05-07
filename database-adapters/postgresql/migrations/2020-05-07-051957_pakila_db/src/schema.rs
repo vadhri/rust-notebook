@@ -60,6 +60,14 @@ table! {
     }
 }
 
+pub enum MpaaRating {
+    G,
+    PG,
+    PG13,
+    R,
+    NC17
+}
+
 table! {
     film (film_id) {
         film_id -> Int4,
@@ -72,7 +80,7 @@ table! {
         rental_rate -> Numeric,
         length -> Nullable<Int2>,
         replacement_cost -> Numeric,
-        rating -> Nullable<Mpaa_rating>,
+        rating -> Nullable<MpaaRating>,
         last_update -> Timestamptz,
         special_features -> Nullable<Array<Text>>,
         fulltext -> Tsvector,
