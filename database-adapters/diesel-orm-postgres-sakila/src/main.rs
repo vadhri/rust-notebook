@@ -3,6 +3,11 @@ extern crate diesel;
 extern crate diesel_derive_enum;
 extern crate dotenv;
 
+use diesel::update;
+use crate::models::NewActor;
+use diesel::dsl::insert_into;
+use crate::models::Actor;
+use r2d2::Pool;
 use std::ops::Deref;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -18,9 +23,8 @@ use r2d2_diesel::ConnectionManager;
 pub mod models;
 pub mod schema;
 
-use std::panic;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-use std::time::Duration;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{Duration, SystemTime};
 
 use schema::actor::dsl::*;
 use schema::address::dsl::*;
@@ -37,8 +41,7 @@ use schema::rental::dsl::*;
 use schema::staff::dsl::*;
 use schema::store::dsl::*;
 
-pub fn establish_connection(conn: &PgConnection) {
-
+pub fn read_all_tables(conn: &PgConnection) {
     let results = actor.limit(50).load::<models::Actor>(conn).expect("Error loading actors");
 
     println!("Displaying {} actors", results.len());
@@ -116,16 +119,12 @@ pub fn establish_connection(conn: &PgConnection) {
     println!("----------\n");
 }
 
-static GLOBAL_THREAD_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
+static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-fn main() {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set in the .env file.");
-    let manager = ConnectionManager::<PgConnection>::new(database_url);
-    let pool = r2d2::Pool::builder().build(manager).expect("Failed to create pool.");
-
+pub fn read_data(pool: &Pool<ConnectionManager<diesel::PgConnection>>) {
     let mut vector = Vec::new();
 
+    // tweak the value below to acheive || connections to database.
     for _ in 0..1 {
         let pool = pool.clone();
 
@@ -134,7 +133,7 @@ fn main() {
             GLOBAL_THREAD_COUNT.fetch_add(1, Ordering::SeqCst);
 
             if connection.is_ok() {
-                establish_connection(connection.unwrap().deref());
+                read_all_tables(connection.unwrap().deref());
             }
 
             GLOBAL_THREAD_COUNT.fetch_sub(1, Ordering::SeqCst);
@@ -150,4 +149,67 @@ fn main() {
 
     // Give some time for writes to finish otherwise, it would close the app without writing to stdout.
     thread::sleep(Duration::from_millis(1000));
+}
+
+pub fn insert_find_update_value_into_table (pool: &Pool<ConnectionManager<diesel::PgConnection>>) {
+    let connection = pool.get();
+
+    if connection.is_ok() {
+        let unwrapped_conn = connection.unwrap();
+        let conn_handle = unwrapped_conn.deref();
+        let now = SystemTime::now().elapsed().unwrap().as_micros();
+
+        let sample_record = NewActor {
+            actor_id: 100001,
+            first_name: "Tom".to_string(),
+            last_name: "Hanks".to_string(),
+            last_update: diesel::pg::data_types::PgTimestamp((now+2) as i64)
+        };
+
+        match insert_into(actor).values(&sample_record).get_results::<Actor>(conn_handle) {
+            Ok(_value) => {
+                println!("New value inserted in db");
+                println!("{:?}", _value);
+            },
+            Err(_reason) => {
+                println!("Error inserting (reason) -> {:?}", _reason);
+            }
+        }
+
+        // Find the record inserted.
+        let results = actor.filter(schema::actor::actor_id.eq(1001)).limit(5).load::<models::Actor>(conn_handle).expect("Error loading posts");
+        println!("Displaying {} actors .. ", results.len());
+        for post in results { println!("{:?}", post); }
+        println!("----------\n");
+
+        let results = actor.filter(schema::actor::first_name.ilike("Arjun")).limit(5).load::<models::Actor>(conn_handle).expect("Error loading posts");
+        println!("Displaying {} actors .. ", results.len());
+        for post in results { println!("{:?}", post); }
+        println!("----------\n");
+
+        let update_actors = actor.filter(schema::actor::actor_id.eq(1001));
+        match update(update_actors).set((
+            schema::actor::first_name.eq("Brad"),
+            schema::actor::last_name.eq("Pitt"))
+        )
+        .get_results::<Actor>(conn_handle) {
+            Ok(_value) => {
+                println!("Updated value in the db");
+                println!("{:?}", _value);
+            },
+            Err(_reason) => {
+                println!("Error updating (reason) -> {:?}", _reason);
+            }
+        }
+    }
+}
+
+fn main() {
+    dotenv().ok();
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set in the .env file.");
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
+    let pool = r2d2::Pool::builder().build(manager).expect("Failed to create pool.");
+
+    read_data(&pool);
+    insert_find_update_value_into_table(&pool);
 }
