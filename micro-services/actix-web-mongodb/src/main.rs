@@ -46,7 +46,40 @@ async fn delete_record(info: web::Path<String>, data: web::Data<AppState>) -> Ht
     }
 }
 
-async fn post_user_record(item: web::Json<UserRecord>, data: web::Data<AppState>) -> Result<HttpResponse, Error> {
+
+async fn update_record(info: web::Path<String>, item: web::Json<UserRecord>, data: web::Data<AppState>) -> HttpResponse  {
+    let doc_to_update = doc! {
+        "_id":  bson::oid::ObjectId::with_string(&info.to_string()).unwrap()
+    };
+
+    let record = doc! {
+        "given_name": item.0.given_name,
+        "last_name": item.0.last_name,
+        "city": item.0.city,
+        "email": item.0.email,
+        "pincode": item.0.pincode,
+    };
+
+    match data.mongo_conn_pool.collection("users").update_one(doc_to_update, record, None) {
+        Ok(_value) => {
+            if _value.modified_count > 0 {
+            HttpResponse::build(StatusCode::OK)
+                .content_type("application/json")
+                .body("")
+            } else {
+                HttpResponse::build(StatusCode::NOT_FOUND)
+                    .content_type("application/json")
+                    .body("Record not found.")
+            }
+        }, Err(reason) => {
+            HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+                .content_type("application/json")
+                .body(reason.to_string())
+        }
+    }
+}
+
+async fn create_record(item: web::Json<UserRecord>, data: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let record = doc! {
         "given_name": item.0.given_name,
         "last_name": item.0.last_name,
@@ -68,7 +101,7 @@ async fn post_user_record(item: web::Json<UserRecord>, data: web::Data<AppState>
     }
 }
 
-async fn get_all_users(_info: web::Path<()>, data: web::Data<AppState>) -> HttpResponse {
+async fn get_all_records(_info: web::Path<()>, data: web::Data<AppState>) -> HttpResponse {
     let mut output: Vec<User> = Vec::new();
     let cursor = data.mongo_conn_pool.collection("users").find(None, None).unwrap();
 
@@ -87,7 +120,7 @@ async fn get_all_users(_info: web::Path<()>, data: web::Data<AppState>) -> HttpR
         .body(serde_json::to_string(&output).unwrap())
 }
 
-async fn get_user_by_id(info: web::Path<String>, data: web::Data<AppState>) -> HttpResponse  {
+async fn get_record_by_id(info: web::Path<String>, data: web::Data<AppState>) -> HttpResponse  {
     let mut output: Vec<User> = Vec::new();
 
     let filter = doc! {
@@ -144,13 +177,14 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 web::resource("/admin/users")
-                    .route(web::get().to(get_all_users))
-                    .route(web::post().to(post_user_record))
+                    .route(web::get().to(get_all_records))
+                    .route(web::post().to(create_record))
             )
             .service(
                 web::resource("/admin/users/{id}")
-                    .route(web::get().to(get_user_by_id))
-                    .route(web::delete().to(delete_record)),
+                    .route(web::get().to(get_record_by_id))
+                    .route(web::delete().to(delete_record))
+                    .route(web::put().to(update_record)),
             )
     })
     .bind("127.0.0.1:8080")?

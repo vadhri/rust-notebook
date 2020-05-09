@@ -31,7 +31,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"given_name\": \"Tom\",\n    \"last_name\": \"Hanks\",\n    \"email\": \"Tom.Hanks@google.com\",\n    \"city\": \"SFO\",\n    \"pincode\": \"560008\"\n}",
+					"raw": "{\n    \"given_name\": \"Brad\",\n    \"last_name\": \"Pitt\",\n    \"email\": \"brad.pitt@google.com\",\n    \"city\": \"SFO\",\n    \"pincode\": \"560008\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -59,7 +59,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/admin/users/5eb69209004c778b00fe61bb",
+					"raw": "http://localhost:8080/admin/users/5eb6bacc0037098000e2f82e",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -68,7 +68,7 @@
 					"path": [
 						"admin",
 						"users",
-						"5eb69209004c778b00fe61bb"
+						"5eb6bacc0037098000e2f82e"
 					]
 				}
 			},
@@ -80,7 +80,7 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/admin/users/5eb69209004c778b00fe61bb",
+					"raw": "http://localhost:8080/admin/users/5eb69e5c00bd3b30005c49f0",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -89,7 +89,37 @@
 					"path": [
 						"admin",
 						"users",
-						"5eb69209004c778b00fe61bb"
+						"5eb69e5c00bd3b30005c49f0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update a single record with ID.",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"_id\": {\n        \"$oid\": \"5eb69e5c00bd3b30005c49f0\"\n    },\n    \"given_name\": \"Steve\",\n    \"last_name\": \"Bucknor\",\n    \"email\": \"Steve.Bucknor@google.com\",\n    \"city\": \"London\",\n    \"pincode\": \"56008\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/admin/users/5eb6bacc0037098000e2f82e",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"admin",
+						"users",
+						"5eb6bacc0037098000e2f82e"
 					]
 				}
 			},
