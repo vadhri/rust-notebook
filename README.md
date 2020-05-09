@@ -1,6 +1,6 @@
 # Rust notebook
 
-Hi - In the project are some loosely coupled project that i made during the course of me learning rust. I will continue to update anything worth archiving that can help a larger audience. 
+Hi - In the notebook, are some loosely coupled project that i made during the course of me learning rust. I will continue to update anything worth archiving that can help a larger audience. 
 
 List of items are categorized roughly as below. 
 
