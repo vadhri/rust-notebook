@@ -1,50 +1,60 @@
 extern crate r2d2;
 extern crate r2d2_mongodb;
 
+use bson::from_bson;
 use crate::model::users::User;
 use actix_web::{get, web, App, HttpServer, Responder};
 use dotenv::dotenv;
-use r2d2::Pool;
-use r2d2_mongodb::mongodb::db::ThreadedDatabase;
-use r2d2_mongodb::mongodb::*;
-use r2d2_mongodb::{ConnectionOptions, MongodbConnectionManager};
+use mongodb::options::*;
+use mongodb::*;
+use bson::Bson;
+
+use bson::doc;
 use std::env;
-use std::ops::Deref;
 mod model;
 
 struct AppState {
-    mongo_conn_pool: r2d2::Pool<r2d2_mongodb::MongodbConnectionManager>,
+    mongo_conn_pool: mongodb::Database,
 }
 
 #[get("/admin/users/")]
 async fn get_all_users(_info: web::Path<()>, data: web::Data<AppState>) -> impl Responder {
-    let connection = &data.mongo_conn_pool.get().unwrap();
-    let conn_handle = connection.deref();
-    let mut output:Vec<User> = Vec::new();
+    let mut output: Vec<User> = Vec::new();
+    let cursor = data.mongo_conn_pool.collection("users").find(None, None).unwrap();
 
-    let cursor = conn_handle
-        .collection("users")
-        .find(None, None)
-        .unwrap();
-
-        for result in cursor {
-            match result {
-                Ok(document) => {
-                    let res = from_bson(Bson::Document(document)).unwrap();
-                    output.push(res);
-                }
-                Err(_e) => {
-
-                }
+    for result in cursor {
+        match result {
+            Ok(document) => {
+                let res = from_bson(Bson::Document(document)).unwrap();
+                output.push(res);
             }
+            Err(_e) => {}
         }
+    }
 
     serde_json::to_string(&output).unwrap()
 }
 
 #[get("/admin/users/{id}")]
-async fn get_user_by_id(info: web::Path<String>, _data: web::Data<AppState>) -> impl Responder {
-    format!("User -> {:?}", info)
+async fn get_user_by_id(info: web::Path<String>, data: web::Data<AppState>) -> impl Responder {
+    let mut output: Vec<User> = Vec::new();
+
+    let filter = doc! {
+        "_id":  bson::oid::ObjectId::with_string(&info).unwrap()
+    };
+
+    let c = data.mongo_conn_pool.collection("users").find(Some(filter), None).unwrap();
+
+    for row in c {
+        match row {
+            Ok(document) => {
+                let res = from_bson(Bson::Document(document)).unwrap();
+                output.push(res);
+            }
+            Err(_e) => {}
+        }
+    }
+    serde_json::to_string(&output).unwrap()
 }
 
 #[actix_rt::main]
@@ -57,30 +67,21 @@ async fn main() -> std::io::Result<()> {
     let _mongodb_password =
         env::var("MONGO_PASSWORD").expect("MONGO_PASSWORD must be set in the .env file.");
 
-    let manager = MongodbConnectionManager::new(
-        ConnectionOptions::builder()
-            .with_host(&mongodb_url, mongodb_port.parse::<u16>().unwrap())
-            // .with_ssl(
-            //     Some("path/to/ca.crt"),
-            //     "path/to/client.crt",
-            //     "path/to/client.key",
-            //     VerifyPeer::Yes
-            // )
-            // .with_unauthenticated_ssl(
-            //     Some("path/to/ca.crt"),
-            //     VerifyPeer::No
-            // )
-            .with_db(&mongodb_db)
-            // .with_auth(&mongodb_uname, &mongodb_password)
-            .build(),
-    );
+    let options = ClientOptions::builder()
+        .hosts(vec![StreamAddress {
+            hostname: mongodb_url,
+            port: Some(mongodb_port.parse::<u16>().unwrap()),
+        }])
+        .build();
 
-    let pool = Pool::builder().max_size(16).build(manager).unwrap();
+    let client = Client::with_options(options).unwrap();
+
+    let db = client.database(&mongodb_db);
 
     HttpServer::new(move || {
         App::new()
             .data(AppState {
-                mongo_conn_pool: pool.clone()
+                mongo_conn_pool: db.clone(),
             })
             .service(
                 web::scope("/admin/")
