@@ -1,9 +1,12 @@
 extern crate r2d2;
 extern crate r2d2_mongodb;
 
+use crate::model::users::UserRecord;
+use actix_web::Error;
 use bson::from_bson;
 use crate::model::users::User;
-use actix_web::{get, web, App, HttpServer, Responder};
+use actix_web::{web, App, HttpServer, HttpResponse};
+use actix_web::http::{StatusCode};
 use dotenv::dotenv;
 use mongodb::options::*;
 use mongodb::*;
@@ -12,13 +15,60 @@ use bson::Bson;
 use bson::doc;
 use std::env;
 mod model;
+use actix_files as fs;
 
+#[derive(Debug)]
 struct AppState {
     mongo_conn_pool: mongodb::Database,
 }
 
-#[get("/admin/users/")]
-async fn get_all_users(_info: web::Path<()>, data: web::Data<AppState>) -> impl Responder {
+async fn delete_record(info: web::Path<String>, data: web::Data<AppState>) -> HttpResponse  {
+    let doc_to_delete = doc! {
+        "_id":  bson::oid::ObjectId::with_string(&info.to_string()).unwrap()
+    };
+
+    match data.mongo_conn_pool.collection("users").delete_one(doc_to_delete, None) {
+        Ok(_value) => {
+            if _value.deleted_count > 0 {
+            HttpResponse::build(StatusCode::OK)
+                .content_type("application/json")
+                .body("")
+            } else {
+                HttpResponse::build(StatusCode::NOT_FOUND)
+                    .content_type("application/json")
+                    .body("Record not found.")
+            }
+        }, Err(reason) => {
+            HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+                .content_type("application/json")
+                .body(reason.to_string())
+        }
+    }
+}
+
+async fn post_user_record(item: web::Json<UserRecord>, data: web::Data<AppState>) -> Result<HttpResponse, Error> {
+    let record = doc! {
+        "given_name": item.0.given_name,
+        "last_name": item.0.last_name,
+        "city": item.0.city,
+        "email": item.0.email,
+        "pincode": item.0.pincode,
+    };
+
+    match data.mongo_conn_pool.collection("users").insert_many(vec![record], None) {
+        Ok(_result) => {
+            Ok(HttpResponse::build(StatusCode::CREATED)
+                .content_type("application/json; charset=utf-8")
+                .body("".to_string()))
+        }, Err(reason) => {
+            Ok(HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+                .content_type("application/json; charset=utf-8")
+                .body(reason.to_string()))
+        }
+    }
+}
+
+async fn get_all_users(_info: web::Path<()>, data: web::Data<AppState>) -> HttpResponse {
     let mut output: Vec<User> = Vec::new();
     let cursor = data.mongo_conn_pool.collection("users").find(None, None).unwrap();
 
@@ -32,15 +82,16 @@ async fn get_all_users(_info: web::Path<()>, data: web::Data<AppState>) -> impl 
         }
     }
 
-    serde_json::to_string(&output).unwrap()
+    HttpResponse::build(StatusCode::OK)
+        .content_type("application/json")
+        .body(serde_json::to_string(&output).unwrap())
 }
 
-#[get("/admin/users/{id}")]
-async fn get_user_by_id(info: web::Path<String>, data: web::Data<AppState>) -> impl Responder {
+async fn get_user_by_id(info: web::Path<String>, data: web::Data<AppState>) -> HttpResponse  {
     let mut output: Vec<User> = Vec::new();
 
     let filter = doc! {
-        "_id":  bson::oid::ObjectId::with_string(&info).unwrap()
+        "_id":  bson::oid::ObjectId::with_string(&info.to_string()).unwrap()
     };
 
     let c = data.mongo_conn_pool.collection("users").find(Some(filter), None).unwrap();
@@ -54,7 +105,10 @@ async fn get_user_by_id(info: web::Path<String>, data: web::Data<AppState>) -> i
             Err(_e) => {}
         }
     }
-    serde_json::to_string(&output).unwrap()
+
+    HttpResponse::build(StatusCode::OK)
+        .content_type("application/json; charset=utf-8")
+        .body(serde_json::to_string(&output).unwrap())
 }
 
 #[actix_rt::main]
@@ -84,9 +138,19 @@ async fn main() -> std::io::Result<()> {
                 mongo_conn_pool: db.clone(),
             })
             .service(
-                web::scope("/admin/")
-                    .service(get_all_users)
-                    .service(get_user_by_id),
+                fs::Files::new("/static/", "./static")
+                    .show_files_listing()
+                    .use_last_modified(true),
+            )
+            .service(
+                web::resource("/admin/users")
+                    .route(web::get().to(get_all_users))
+                    .route(web::post().to(post_user_record))
+            )
+            .service(
+                web::resource("/admin/users/{id}")
+                    .route(web::get().to(get_user_by_id))
+                    .route(web::delete().to(delete_record)),
             )
     })
     .bind("127.0.0.1:8080")?
