@@ -33,6 +33,8 @@ Rust langauge samples for various concepts.
 - actix-web-mongodb  is expected to demonstrate the usage of .. 
 	- Mongo driver of rust (CRUD operations of a record. R2d2 polling is avoided since the connection polling is part of the mongodb rust driver.)
     - Actix web framework - CRUD APIs with db ( along with postman json )
-    - Static serving of files 
+    - Static serving of files.
+    - Create user with actos for db create user request. 
+    - Client CRUD API testing app based on react-admin 
 - [Someday] Rocket, gRPC and warp 
 
