@@ -38,3 +38,6 @@ Rust langauge samples for various concepts.
     - Client CRUD API testing app based on react-admin 
 - [Someday] Rocket, gRPC and warp 
 
+## QA 
+- Quickcheck - sample usage for automated unit testing based on function template. 
+- Criterion - Sample usage for collecting benchmarks for sample runs of reading, re-sizing and saving two image variants. 
