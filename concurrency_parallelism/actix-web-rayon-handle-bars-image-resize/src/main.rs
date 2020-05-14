@@ -44,16 +44,10 @@ async fn handle_multipart_post(mut payload: Multipart) -> Result<HttpResponse, E
             buf.extend_from_slice(&data);
         }
 
-        request!("Loading image from memory worth {:?} bytes", buf.len());
         let img = image::load_from_memory(&buf).unwrap();
-        request!("Loaded image from memory worth {:?} bytes", buf.len());
-
         let send = send.clone();
 
-        request!("Before rayon spawn ...");
         rayon::spawn(move || {
-            request!("inside rayon spawn ...");
-
             let thumbnail_task_mem = || -> String {
                 match image_utils::read_img_mem_resize(&img, 100, 100) {
                     Ok(res) => res,
@@ -72,18 +66,13 @@ async fn handle_multipart_post(mut payload: Multipart) -> Result<HttpResponse, E
             send.send(("image_url_1".to_string(), tk_res)).unwrap();
             send.send(("image_url_2".to_string(), ht_res)).unwrap();
         });
-        request!("after rayon spawn ...");
     }
 
-    request!("Try to receive -> {:?}", data);
     drop(send);
 
     while let Some((url, res)) = recv.recv().await {
-        request!("Received completed task .. {:?}", (&url, &res));
         data.insert(url, res);
     }
-
-    request!("data -> {:?}", data);
 
     let html = handlebars.render_template(image_template, &data).unwrap();
     Ok(HttpResponse::Ok().body(html).into())
