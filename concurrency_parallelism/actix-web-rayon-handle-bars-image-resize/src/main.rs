@@ -4,15 +4,17 @@ use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
 use futures::{StreamExt, TryStreamExt};
 use std::collections::BTreeMap;
 use std_logger::request;
+use tokio::sync::mpsc;
 
-use image_utils;
-use handlebars::Handlebars;
+use futures::executor;
+
 use bytes::BytesMut;
+use handlebars::Handlebars;
+use image_utils;
 
-async fn save_file(mut payload: Multipart) -> Result<HttpResponse, Error> {
+async fn handle_multipart_post(mut payload: Multipart) -> Result<HttpResponse, Error> {
     let mut handlebars = Handlebars::new();
     let mut data = BTreeMap::new();
-    let mut buf = BytesMut::with_capacity(0);
 
     let image_template = r#"<html>
         <head><title>Upload Test</title></head>
@@ -24,13 +26,19 @@ async fn save_file(mut payload: Multipart) -> Result<HttpResponse, Error> {
 
     match handlebars.register_template_string("result", image_template) {
         Ok(res) => {
-            println!("handle bars registered {:?}", res);
-        }, Err(reason) => {
-            println!("handle bars registered {:?}", reason);
+            request!("handle bars registered {:?}", res);
+        }
+        Err(reason) => {
+            request!("handle bars registered {:?}", reason);
         }
     };
 
+    let (send, mut recv) = mpsc::unbounded_channel();
+    let mut buf = Vec::with_capacity(1024);
+
     while let Ok(Some(mut field)) = payload.try_next().await {
+        buf.clear();
+
         while let Some(chunk) = field.next().await {
             let data = chunk.unwrap();
             buf.extend_from_slice(&data);
@@ -40,33 +48,42 @@ async fn save_file(mut payload: Multipart) -> Result<HttpResponse, Error> {
         let img = image::load_from_memory(&buf).unwrap();
         request!("Loaded image from memory worth {:?} bytes", buf.len());
 
-        let thumbnail_task_mem = || -> String {
-            match image_utils::read_img_mem_resize (&img, 100, 100) {
-                Ok(res) => {
-                    res
-                },
-                rest => {
-                    rest.unwrap().to_string()
+        let send = send.clone();
+
+        request!("Before rayon spawn ...");
+        rayon::spawn(move || {
+            request!("inside rayon spawn ...");
+
+            let thumbnail_task_mem = || -> String {
+                match image_utils::read_img_mem_resize(&img, 100, 100) {
+                    Ok(res) => res,
+                    rest => rest.unwrap().to_string(),
                 }
-            }
-        };
+            };
 
-        let half_task_mem = || -> String {
-            match image_utils::read_img_mem_resize(&img, 400, 400) {
-                Ok(res) => {
-                    res
-                },
-                rest => {
-                    rest.unwrap().to_string()
+            let half_task_mem = || -> String {
+                match image_utils::read_img_mem_resize(&img, 400, 400) {
+                    Ok(res) => res,
+                    rest => rest.unwrap().to_string(),
                 }
-            }
-        };
+            };
 
-        let (tk_res, ht_res) = rayon::join(thumbnail_task_mem, half_task_mem);
-
-        data.insert("image_url_1".to_string(), tk_res);
-        data.insert("image_url_2".to_string(), ht_res);
+            let (tk_res, ht_res) = rayon::join(thumbnail_task_mem, half_task_mem);
+            send.send(("image_url_1".to_string(), tk_res)).unwrap();
+            send.send(("image_url_2".to_string(), ht_res)).unwrap();
+        });
+        request!("after rayon spawn ...");
     }
+
+    request!("Try to receive -> {:?}", data);
+    drop(send);
+
+    while let Some((url, res)) = recv.recv().await {
+        request!("Received completed task .. {:?}", (&url, &res));
+        data.insert(url, res);
+    }
+
+    request!("data -> {:?}", data);
 
     let html = handlebars.render_template(image_template, &data).unwrap();
     Ok(HttpResponse::Ok().body(html).into())
@@ -96,11 +113,12 @@ async fn main() -> std::io::Result<()> {
     request!("Started server {:?}", ip);
 
     HttpServer::new(|| {
-        App::new().wrap(middleware::Logger::default())
+        App::new()
+            .wrap(middleware::Logger::default())
             .service(
-            web::resource("/")
-                .route(web::get().to(index))
-                .route(web::post().to(save_file)),
+                web::resource("/")
+                    .route(web::get().to(index))
+                    .route(web::post().to(handle_multipart_post)),
             )
             .service(
                 fs::Files::new("/test-image/", "./test-image")
