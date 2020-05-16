@@ -1,0 +1,11 @@
+[package]
+name = "mqtt_client"
+version = "0.1.0"
+authors = ["Venkata Ratnam Vadhri <vadhrivenkata.ratnam@nagra.com>"]
+edition = "2018"
+
+[dependencies]
+paho-mqtt = { path = "./paho.mqtt.rust/" }
+dotenv = "0.15.0"
+querystring =  "1.1.0"
+rand = "0.7.3"
