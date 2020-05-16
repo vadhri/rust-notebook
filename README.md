@@ -6,7 +6,7 @@ List of items are categorized roughly as below.
 
 ## Command line utilities
 
-Rust is popular in its own way for writing utilities for command line. The clap library provides a neat way to extract arguments from any command line run programes / services / adapters etc.
+Rust is popular in its own way for writing utilities for command line. The clap library provides a neat way to extract arguments from any command line run programmes / services / adapters etc.
 
 ## Async and network
 In rust, async & await would need a lot of practise and in the folder you would see some examples of using ...
@@ -16,7 +16,7 @@ In rust, async & await would need a lot of practise and in the folder you would 
  - TcpStream ( converting tcpstreams { sockets } as Streams ) & socket based client server exchange of a file
  - TcpUtils ( codecs ) based simple chat / echo server
  - Converting u8 vectors into streams.
- - [Someday] Websockets and tokio codecs 
+ - [Someday] Websockets and tokio codecs
 
 ## Concurrency & parallelism
 - Threading support and simple usage of cross beam channels
@@ -41,3 +41,6 @@ Rust langauge samples for various concepts.
 ## QA
 - Quickcheck - sample usage for automated unit testing based on function template.
 - Criterion - Sample usage for collecting benchmarks for sample runs of reading, re-sizing and saving two image variants.
+
+## Iot
+- MQTT client with paho.mqtt.rust lib with example of thingspeak
