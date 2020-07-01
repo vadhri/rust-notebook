@@ -1,6 +1,7 @@
 # Introduction
 The idea of this small project is to check how to work with large number of concurrent websockets. The following is the quick overview of the project.
 
+```
 +--------------------------------------------+
 |  +-------+       +-------------------+     |
 |  |       |       |                   |     |
@@ -16,6 +17,7 @@ The idea of this small project is to check how to work with large number of conc
 |  |       |       |                   |     |
 |  +-------+       +-------------------+     |
 +--------------------------------------------+
+```
 
 # API endpoints
 
