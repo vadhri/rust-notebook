@@ -7,6 +7,7 @@ use futures::{FutureExt, StreamExt};
 use tokio::sync::{mpsc, RwLock};
 use warp::ws::{Message, WebSocket};
 use uuid::Uuid;
+use serde::{Serialize, Deserialize};
 
 use warp::Filter;
 
@@ -62,6 +63,36 @@ async fn user_connected(ws: WebSocket, users: Users) {
     users.write().await.remove(&uuid_of_user);
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct BroadcastMessage {
+    pub text: String
+}
+
+#[derive(Deserialize, Serialize)]
+struct Response {
+    code: u32,
+    reason: String,
+}
+use std::convert::Infallible;
+
+async fn broadcast_message_handler(users: Users, msg: String) -> Result<impl warp::Reply, Infallible> {
+
+    broadcast_message(Message::text(msg), users.clone()).await;
+
+    let r: Response = Response {
+        code: 0,
+        reason: format!("Message broadcast to {:?} users.", users.read().await.len())
+    };
+
+    Ok(warp::reply::json(&r))
+}
+
+fn json_body() -> impl Filter<Extract = (BroadcastMessage,), Error = warp::Rejection> + Clone {
+    // When accepting a body, we want a JSON body
+    // (and to reject huge payloads)...
+    warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+}
+
 #[tokio::main]
 async fn main() {
     let _res = redis_wrapper::init::initialize_redis("redis://127.0.0.1:6379/".to_string());
@@ -72,14 +103,22 @@ async fn main() {
 
     let ws_route = warp::path("ws")
       .and(warp::ws())
-      .and(users_filterized)
+      .and(users_filterized.clone())
       .map(|ws: warp::ws::Ws, users: Users| {
           ws.on_upgrade(move |incoming_websocket| {
               user_connected(incoming_websocket, users.clone())
           })
       });
 
-      warp::serve(ws_route)
+      let broadcast = warp::path("broadcast")
+        .and(warp::post())
+        .and(users_filterized)
+        .and(json_body())
+        .and_then(|users: Users, message: BroadcastMessage| {
+            broadcast_message_handler(users.clone(), message.text)
+        });
+
+      warp::serve(ws_route.or(broadcast))
           .run(([127, 0, 0, 1], 3030))
           .await;
 }

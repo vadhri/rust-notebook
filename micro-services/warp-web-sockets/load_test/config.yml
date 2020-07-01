@@ -2,10 +2,12 @@
     target: "ws://localhost:3030/ws"
     processor: "./wss-func/func.js"
     phases:
-      - duration: 5
-        arrivalRate: 100
+      - duration: 50
+        arrivalRate: 300
   scenarios:
     - engine: "ws"
       flow:
         - function: "createTimestampedObject"
+        - send: "{{ data }}"
+        - think: 5
         - send: "{{ data }}"
