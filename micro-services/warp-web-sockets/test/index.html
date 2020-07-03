@@ -6,6 +6,27 @@
   var wsUri = "ws://localhost:3030/ws";
   var output;
 
+  function register_user() {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
+    var raw = JSON.stringify({"name":"Isaac Newton"});
+
+    var requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: raw,
+      redirect: 'follow'
+    };
+
+    fetch("http://localhost:3030/register", requestOptions)
+      .then(response => response.text())
+      .then(result => console.log(result))
+      .catch(error => console.log('error', error));
+
+      init();
+  }
+
   function init()
   {
     output = document.getElementById("output");
@@ -60,7 +81,7 @@
     output.appendChild(pre);
   }
 
-  window.addEventListener("load", init, false);
+  window.addEventListener("load", register_user, false);
 
   </script>
 

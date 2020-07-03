@@ -19,6 +19,12 @@ The idea of this small project is to check how to work with large number of conc
 +--------------------------------------------+
 ```
 
+The project would demonstrate the following.
+- Warp websocket connect, send / recv messages
+- Routes to be Configured
+- Cors confguration
+- 
+
 # API endpoints
 
 The following is the list of API endpoints.
@@ -31,3 +37,8 @@ The following is the list of API endpoints.
 | UnSubscribeTopic | A client can Unsubscribe from the existing topics                                       | 202 Accepted 403 Forbidden 404 Topic not found                         | String of topics  to unsubscribe from. |
 
 TODO //
+
+Build the source with the following command.
+```
+cargo run
+```
