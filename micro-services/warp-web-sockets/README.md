@@ -1,5 +1,3 @@
-## Status : In Progress
-
 # Introduction
 The idea of this small project is to check how to work with large number of concurrent websockets. The following is the quick overview of the project.
 
@@ -25,7 +23,10 @@ The project would demonstrate the following.
 - Warp websocket connect, send / recv messages
 - Routes to be Configured
 - Cors confguration
-- 
+- Redis interfaces
+- A sample for connecting over WebSocket
+- Artillery usage with WebSockets
+
 
 # API endpoints
 
