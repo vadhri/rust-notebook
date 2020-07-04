@@ -25,7 +25,8 @@ use api_handler::handler::{
 use api_handler::filters::{
     json_body,
     json_body_register,
-    with_db
+    with_db,
+    with_db_multiplexd_aio
 };
 
 use redis_wrapper::init::check_key_exists;
@@ -81,6 +82,8 @@ async fn user_connected(id: String, ws: WebSocket, users: Users, rconn: redis::C
 async fn main() {
     let client = redis_wrapper::init::initialize_redis("redis://127.0.0.1:6379/".to_string()).unwrap();
     let connection = client.clone().get_connection();
+    let mut c = client.get_multiplexed_async_connection().await.unwrap();
+
     let users = Users::default();
     let users_filterized = warp::any().map(move || users.clone());
 
@@ -109,9 +112,10 @@ async fn main() {
 
     let register = warp::path("register")
         .and(warp::post())
-        .and(with_db(client.clone()))
+        .and(with_db_multiplexd_aio(c))
         .and(json_body_register())
-        .and_then(|rconn: redis::Client, message: Register| {
+        .and_then(|rconn: redis::aio::MultiplexedConnection, message: Register| {
+            println!("ws: user register {:?}", message.name);
             register_message_handler(message, rconn)
     }).with(cors.clone());
 
@@ -121,6 +125,7 @@ async fn main() {
         .and(with_db(client.clone()))
         .and(users_filterized.clone())
         .map(|ws: warp::ws::Ws, id: String, rconn: redis::Client, users: Users| {
+          println!("ws: user connected {:?}", id);
           ws.on_upgrade(move |incoming_websocket| {
               user_connected(id, incoming_websocket, users.clone(), rconn)
           })

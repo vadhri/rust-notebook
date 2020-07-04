@@ -1,5 +1,5 @@
 use warp::ws::Message;
-use std::convert::Infallible;
+use std::{ptr::null, convert::Infallible};
 use redis::Connection;
 
 use crate::common::types::{
@@ -14,7 +14,9 @@ use uuid::Uuid;
 use crate::redis_wrapper::init::{
     write_hashmap_key,
     read_hashmap_key,
-    check_key_exists
+    check_key_exists,
+    check_key_exists_multiplexed,
+    write_hashmap_key_multiplexed
 };
 
 pub async fn broadcast_message(msg: Message, users: Users) {
@@ -32,14 +34,15 @@ pub async fn broadcast_message_handler(users: Users, msg: String) -> Result<impl
     }))
 }
 
-pub async fn register_message_handler(register: Register, rconn: redis::Client) -> Result<impl warp::Reply, Infallible> {
-    let mut connection = rconn.get_connection().unwrap();
+pub async fn register_message_handler(register: Register, rconn: redis::aio::MultiplexedConnection) -> Result<impl warp::Reply, Infallible> {
     let uuid_of_user = Uuid::new_v4();
 
-    match check_key_exists(&mut connection, &"users".to_string(), &register.name) {
+    let check_user = check_key_exists_multiplexed(rconn.clone(), &"users".to_string(), &register.name).await;
+
+    match check_user {
         Ok(false) => {
-            let _res = write_hashmap_key(&mut connection, &"users".to_string(), &register.name, &uuid_of_user.to_string());
-            let _res = write_hashmap_key(&mut connection, &"active".to_string(), &uuid_of_user.to_string(), &"enabled".to_string());
+            let _res = write_hashmap_key_multiplexed(rconn.clone(), "users".to_string(), register.name, uuid_of_user.to_string()).await;
+            let _res = write_hashmap_key_multiplexed(rconn.clone(), "active".to_string(), uuid_of_user.to_string(), "enabled".to_string()).await;
 
             let resp = warp::reply::json(&RegisterMessageResponse {
                 code: 0,
@@ -58,6 +61,5 @@ pub async fn register_message_handler(register: Register, rconn: redis::Client) 
             Ok(resp)
         }
     }
-
 
 }

@@ -1,13 +1,16 @@
   config:
-    target: "ws://localhost:3030/ws"
+    target: "http://localhost:3030/"
     processor: "./wss-func/func.js"
     phases:
-      - duration: 50
-        arrivalRate: 300
+      - duration: 60
+        arrivalRate: 150
   scenarios:
-    - engine: "ws"
-      flow:
-        - function: "createTimestampedObject"
-        - send: "{{ data }}"
-        - think: 5
-        - send: "{{ data }}"
+    - flow:
+        - function: "generateRandomData"
+        - post:
+            url: "http://localhost:3030/register"
+            json:
+              name: "{{ name }}"
+            capture:
+              json: "$.uuid"
+              as: uuid

@@ -15,3 +15,7 @@ pub fn json_body_register() -> impl Filter<Extract = (Register,), Error = warp::
 pub fn with_db(client: redis::Client) -> impl Filter<Extract = (redis::Client,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || client.clone())
 }
+
+pub fn with_db_multiplexd_aio(conn: redis::aio::MultiplexedConnection) -> impl Filter<Extract = (redis::aio::MultiplexedConnection,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || conn.clone())
+}
