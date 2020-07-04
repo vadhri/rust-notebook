@@ -29,12 +29,10 @@ use api_handler::filters::{
     with_db_multiplexd_aio
 };
 
-use redis_wrapper::init::check_key_exists;
+use redis_wrapper::init::check_key_exists_multiplexed;
 
-async fn user_connected(id: String, ws: WebSocket, users: Users, rconn: redis::Client) {
-    print!("[user_connected] id => {:?}", id);
-
-    match check_key_exists(&mut rconn.clone().get_connection().unwrap(), &"active".to_string(), &id) {
+async fn user_connected(id: String, ws: WebSocket, users: Users, rconn: redis::aio::MultiplexedConnection) {
+    match check_key_exists_multiplexed(rconn.clone(), &"active".to_string(), &id).await {
         Ok(true) => {},
         _ => {
             ws.close();
@@ -112,7 +110,7 @@ async fn main() {
 
     let register = warp::path("register")
         .and(warp::post())
-        .and(with_db_multiplexd_aio(c))
+        .and(with_db_multiplexd_aio(c.clone()))
         .and(json_body_register())
         .and_then(|rconn: redis::aio::MultiplexedConnection, message: Register| {
             println!("ws: user register {:?}", message.name);
@@ -122,9 +120,9 @@ async fn main() {
     let ws_route = warp::path("ws")
         .and(warp::ws())
         .and(warp::path::param())
-        .and(with_db(client.clone()))
+        .and(with_db_multiplexd_aio(c.clone()))
         .and(users_filterized.clone())
-        .map(|ws: warp::ws::Ws, id: String, rconn: redis::Client, users: Users| {
+        .map(|ws: warp::ws::Ws, id: String, rconn: redis::aio::MultiplexedConnection, users: Users| {
           println!("ws: user connected {:?}", id);
           ws.on_upgrade(move |incoming_websocket| {
               user_connected(id, incoming_websocket, users.clone(), rconn)
