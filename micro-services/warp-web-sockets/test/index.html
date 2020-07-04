@@ -3,14 +3,14 @@
   <title>WebSocket Test</title>
   <script language="javascript" type="text/javascript">
 
-  var wsUri = "ws://localhost:3030/ws";
+  var wsUri = "ws://localhost:3030/ws/";
   var output;
 
   function register_user() {
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
 
-    var raw = JSON.stringify({"name":"Isaac Newton"});
+    var raw = JSON.stringify({"name":"vadhri1"});
 
     var requestOptions = {
       method: 'POST',
@@ -20,11 +20,15 @@
     };
 
     fetch("http://localhost:3030/register", requestOptions)
-      .then(response => response.text())
-      .then(result => console.log(result))
+      .then(response => response.json())
+      .then(result => {
+        console.log(result);
+        if (result.code == 0) {
+            wsUri += result.uuid;
+            init();
+        }
+      })
       .catch(error => console.log('error', error));
-
-      init();
   }
 
   function init()

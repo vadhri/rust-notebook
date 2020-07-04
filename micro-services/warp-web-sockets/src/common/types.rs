@@ -25,9 +25,21 @@ pub struct RegisterMessageResponse {
 }
 
 #[derive(Deserialize, Serialize)]
+pub struct RegisterErrorResponse {
+    pub code: u32,
+    pub reason: String,
+}
+
+#[derive(Deserialize, Serialize)]
 pub struct Register {
     pub name: String
 
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ErrorMessage {
+    pub code: u16,
+    pub reason: String
 }
 
 pub type HashMapType = HashMap<String, String>;

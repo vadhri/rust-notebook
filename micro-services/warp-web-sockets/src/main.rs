@@ -28,8 +28,19 @@ use api_handler::filters::{
     with_db
 };
 
-async fn user_connected(ws: WebSocket, users: Users) {
-    // Split the websocket into rx and tx streams.
+use redis_wrapper::init::check_key_exists;
+
+async fn user_connected(id: String, ws: WebSocket, users: Users, rconn: redis::Client) {
+    print!("[user_connected] id => {:?}", id);
+
+    match check_key_exists(&mut rconn.clone().get_connection().unwrap(), &"active".to_string(), &id) {
+        Ok(true) => {},
+        _ => {
+            ws.close();
+            return;
+        }
+    }
+
     let (conn_tx, mut conn_rx) = ws.split();
     let (tx, mut rx) = mpsc::unbounded_channel();
     let uuid_of_user = Uuid::new_v4();
@@ -77,27 +88,20 @@ async fn main() {
 
     let cors = warp::cors()
         .allow_any_origin()
-        .allow_headers(vec!["User-Agent",
-        "Sec-Fetch-Mode",
-        "Referer",
-        "Origin",
-        "Access-Control-Request-Method",
-        "Content-Type",
-        "Access-Control-Request-Headers"])
+        .allow_headers(vec![
+            "User-Agent",
+            "Sec-Fetch-Mode",
+            "Referer",
+            "Origin",
+            "Access-Control-Request-Method",
+            "Content-Type",
+            "Access-Control-Request-Headers"
+        ])
         .allow_methods(vec!["POST"]);
-
-    let ws_route = warp::path("ws")
-        .and(warp::ws())
-        .and(users_filterized.clone())
-        .map(|ws: warp::ws::Ws, users: Users| {
-          ws.on_upgrade(move |incoming_websocket| {
-              user_connected(incoming_websocket, users.clone())
-          })
-    });
 
     let broadcast = warp::path("broadcast")
         .and(warp::post())
-        .and(users_filterized)
+        .and(users_filterized.clone())
         .and(json_body())
         .and_then(|users: Users, message: BroadcastMessage| {
             broadcast_message_handler(users.clone(), message.text)
@@ -110,6 +114,17 @@ async fn main() {
         .and_then(|rconn: redis::Client, message: Register| {
             register_message_handler(message, rconn)
     }).with(cors.clone());
+
+    let ws_route = warp::path("ws")
+        .and(warp::ws())
+        .and(warp::path::param())
+        .and(with_db(client.clone()))
+        .and(users_filterized.clone())
+        .map(|ws: warp::ws::Ws, id: String, rconn: redis::Client, users: Users| {
+          ws.on_upgrade(move |incoming_websocket| {
+              user_connected(id, incoming_websocket, users.clone(), rconn)
+          })
+    });
 
     let options_only = warp::options().map(warp::reply).with(cors.clone());
 

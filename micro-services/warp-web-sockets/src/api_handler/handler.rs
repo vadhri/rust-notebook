@@ -6,13 +6,15 @@ use crate::common::types::{
     Users,
     BroadcastMessageResponse,
     Register,
-    RegisterMessageResponse
+    RegisterMessageResponse,
+    RegisterErrorResponse
 };
 use uuid::Uuid;
 
 use crate::redis_wrapper::init::{
     write_hashmap_key,
-    read_hashmap_key
+    read_hashmap_key,
+    check_key_exists
 };
 
 pub async fn broadcast_message(msg: Message, users: Users) {
@@ -34,13 +36,28 @@ pub async fn register_message_handler(register: Register, rconn: redis::Client) 
     let mut connection = rconn.get_connection().unwrap();
     let uuid_of_user = Uuid::new_v4();
 
-    let _res = write_hashmap_key(&mut connection, &"users".to_string(), &register.name, &uuid_of_user.to_string());
+    match check_key_exists(&mut connection, &"users".to_string(), &register.name) {
+        Ok(false) => {
+            let _res = write_hashmap_key(&mut connection, &"users".to_string(), &register.name, &uuid_of_user.to_string());
+            let _res = write_hashmap_key(&mut connection, &"active".to_string(), &uuid_of_user.to_string(), &"enabled".to_string());
 
-    let resp = warp::reply::json(&RegisterMessageResponse {
-        code: 0,
-        uuid: uuid_of_user.to_string(),
-        reason: format!("Registered user successfully!")
-    });
+            let resp = warp::reply::json(&RegisterMessageResponse {
+                code: 0,
+                uuid: uuid_of_user.to_string(),
+                reason: format!("Registered user successfully!")
+            });
 
-    Ok(resp)
+            Ok(resp)
+        },
+        _ => {
+            let resp = warp::reply::json(&RegisterErrorResponse {
+                code: 1,
+                reason: format!("User already exists!")
+            });
+
+            Ok(resp)
+        }
+    }
+
+
 }

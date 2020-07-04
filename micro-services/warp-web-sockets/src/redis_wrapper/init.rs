@@ -24,6 +24,10 @@ pub fn read_hashmap_key(con: &mut Connection, h: &String) -> redis::RedisResult<
     Ok(p.unwrap())
 }
 
+pub fn check_key_exists(con: &mut Connection, h: &String, k: &String) -> redis::RedisResult<bool> {
+    con.hexists(h, k)
+}
+
 pub fn initialize_redis(url: String) -> redis::RedisResult<Client> {
     Ok(redis::Client::open(url)?)
 }
