@@ -1,5 +1,5 @@
 # Introduction
-The idea of this small project is to check how to work with large number of concurrent websockets. The following is the quick overview of the project.
+The idea of this small project is to check how to work with concurrent websocket connections.
 
 ```
 +--------------------------------------------+
@@ -8,8 +8,8 @@ The idea of this small project is to check how to work with large number of conc
 |  |       +<------+  Register /       +<---------------+
 |  |       |       |  Unregister /     |     |          |
 |  |       |       |                   |     |    +-----+----+
-|  |       |       |                   |     |    |          |
-|  |       |       +-------------------+     |    |  Client  |
+|  |       |       +-------------------+     |    |          |
+|  |       |                                 |    |  Client  |
 |  | Redis |       +-------------------+     |    |          |
 |  |       |       |                   |     |    +-----+----+
 |  |       |       |                   |     |          |
@@ -20,12 +20,12 @@ The idea of this small project is to check how to work with large number of conc
 ```
 
 The project would demonstrate the following.
-- Warp websocket connect, send / recv messages
-- Routes to be Configured
-- Cors confguration
-- Redis interfaces
-- A sample for connecting over WebSocket
-- Artillery usage with WebSockets
+- websocket connect, send / recv messages
+- Routes to be configured
+- Cors confguration to allow domains.
+- Redis interfaces with multiplexed connections.
+- A HTML sample for connecting over WebSocket.
+- Artillery usage.
 
 
 # API endpoints
@@ -45,4 +45,4 @@ Build the source with the following command.
 cargo run
 ```
 
-Test html should be able to help with sample commands. 
+Test html should be able to help with sample commands.
