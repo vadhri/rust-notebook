@@ -2,8 +2,8 @@
     target: "http://localhost:3030/"
     processor: "./wss-func/func.js"
     phases:
-      - duration: 60
-        arrivalRate: 150
+      - duration: 1000
+        arrivalRate: 50
   scenarios:
     - flow:
         - function: "generateRandomData"
@@ -14,3 +14,8 @@
             capture:
               json: "$.uuid"
               as: uuid
+        - post:
+            url: "http://localhost:3030/unregister"
+            json:
+              name: "{{ name }}"
+              uuid: "{{ uuid }}"

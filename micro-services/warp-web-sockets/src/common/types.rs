@@ -24,6 +24,19 @@ pub struct RegisterMessageResponse {
     pub reason: String,
 }
 
+
+#[derive(Deserialize, Serialize)]
+pub struct UnRegister {
+    pub name: String,
+    pub uuid: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct UnRegisterMessageResponse {
+    pub code: u32,
+    pub reason: String,
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct RegisterErrorResponse {
     pub code: u32,
@@ -43,4 +56,4 @@ pub struct ErrorMessage {
 }
 
 pub type HashMapType = HashMap<String, String>;
-pub(crate) type Users = Arc<RwLock<HashMap<Uuid, mpsc::UnboundedSender<Result<Message, warp::Error>>>>>;
+pub(crate) type Users = Arc<RwLock<HashMap<String, mpsc::UnboundedSender<Result<Message, warp::Error>>>>>;

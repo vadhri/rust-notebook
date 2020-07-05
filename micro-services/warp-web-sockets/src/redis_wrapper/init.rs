@@ -45,6 +45,14 @@ pub async fn write_hashmap_key_multiplexed(con: redis::aio::MultiplexedConnectio
         .await
 }
 
+pub async fn del_hashmap_key_multiplexed(con: redis::aio::MultiplexedConnection, h: String, k: String) -> redis::RedisResult<()> {
+    redis::cmd("HDEL")
+        .arg(h)
+        .arg(k)
+        .query_async(&mut con.clone())
+        .await
+}
+
 pub fn initialize_redis(url: String) -> redis::RedisResult<Client> {
     Ok(redis::Client::open(url)?)
 }

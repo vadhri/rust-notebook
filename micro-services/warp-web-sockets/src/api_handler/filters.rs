@@ -1,6 +1,7 @@
 use crate::common::types::{
     BroadcastMessage,
-    Register
+    Register,
+    UnRegister
 };
 use warp::Filter;
 
@@ -12,7 +13,11 @@ pub fn json_body_register() -> impl Filter<Extract = (Register,), Error = warp::
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
-pub fn with_db(client: redis::Client) -> impl Filter<Extract = (redis::Client,), Error = std::convert::Infallible> + Clone {
+pub fn json_body_unregister() -> impl Filter<Extract = (UnRegister,), Error = warp::Rejection> + Clone {
+    warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+}
+
+pub fn _with_db(client: redis::Client) -> impl Filter<Extract = (redis::Client,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || client.clone())
 }
 

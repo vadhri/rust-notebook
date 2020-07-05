@@ -1,22 +1,21 @@
 use warp::ws::Message;
-use std::{ptr::null, convert::Infallible};
-use redis::Connection;
+use std::convert::Infallible;
 
 use crate::common::types::{
     Users,
     BroadcastMessageResponse,
     Register,
+    UnRegister,
     RegisterMessageResponse,
-    RegisterErrorResponse
+    RegisterErrorResponse,
+    UnRegisterMessageResponse
 };
 use uuid::Uuid;
 
 use crate::redis_wrapper::init::{
-    write_hashmap_key,
-    read_hashmap_key,
-    check_key_exists,
     check_key_exists_multiplexed,
-    write_hashmap_key_multiplexed
+    write_hashmap_key_multiplexed,
+    del_hashmap_key_multiplexed
 };
 
 pub async fn broadcast_message(msg: Message, users: Users) {
@@ -50,7 +49,7 @@ pub async fn register_message_handler(register: Register, rconn: redis::aio::Mul
                 reason: format!("Registered user successfully!")
             });
 
-            Ok(resp)
+            Ok(warp::reply::with_status(resp, warp::http::StatusCode::CREATED))
         },
         _ => {
             let resp = warp::reply::json(&RegisterErrorResponse {
@@ -58,8 +57,35 @@ pub async fn register_message_handler(register: Register, rconn: redis::aio::Mul
                 reason: format!("User already exists!")
             });
 
-            Ok(resp)
+            Ok(warp::reply::with_status(resp, warp::http::StatusCode::CONFLICT))
         }
     }
+}
 
+pub async fn unregister_message_handler(rconn: redis::aio::MultiplexedConnection, u: UnRegister) -> Result<impl warp::Reply, Infallible> {
+    let check_user = check_key_exists_multiplexed(rconn.clone(), &"users".to_string(), &u.name).await;
+
+    match check_user {
+        Ok(false) => {
+            let response_message = warp::reply::json(&UnRegisterMessageResponse {
+                code: 0,
+                reason: format!("User not found!")
+            });
+
+            Ok(warp::reply::with_status(response_message, warp::http::StatusCode::CONFLICT))
+        },
+        _ => {
+            del_hashmap_key_multiplexed(rconn.clone(), "users".to_string(), u.name).await;
+            del_hashmap_key_multiplexed(rconn.clone(), "active".to_string(), u.uuid.to_string()).await;
+
+            //println!("Delete uuid : {:?}", u.uuid.to_string());
+
+            let response_message = warp::reply::json(&RegisterErrorResponse {
+                code: 0,
+                reason: format!("User deleted exists!")
+            });
+
+            Ok(warp::reply::with_status(response_message, warp::http::StatusCode::OK))
+        }
+    }
 }

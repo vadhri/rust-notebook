@@ -4,6 +4,7 @@ use warp::ws::{Message, WebSocket};
 use uuid::Uuid;
 
 use warp::{http::Method, Filter, hyper::{StatusCode, Response}};
+use futures::executor::block_on;
 
 mod redis_wrapper;
 mod topics;
@@ -13,26 +14,50 @@ mod api_handler;
 use common::types::{
     BroadcastMessage,
     Register,
+    UnRegister,
     Users
 };
 
 use api_handler::handler::{
     broadcast_message,
     broadcast_message_handler,
-    register_message_handler
+    register_message_handler,
+    unregister_message_handler
 };
 
 use api_handler::filters::{
     json_body,
     json_body_register,
-    with_db,
+    json_body_unregister,
     with_db_multiplexd_aio
 };
 
 use redis_wrapper::init::check_key_exists_multiplexed;
 
-async fn user_connected(id: String, ws: WebSocket, users: Users, rconn: redis::aio::MultiplexedConnection) {
-    match check_key_exists_multiplexed(rconn.clone(), &"active".to_string(), &id).await {
+pub fn close_running_sockets(users: Users, suuid: String) {
+    async fn close_sockets(users: Users, uuid: String) {
+
+        let tx;
+
+        {
+            match users.clone().read().await.get(&uuid.clone()) {
+                Some(txval) => {
+                    tx = txval.clone();
+                    let _r = tx.send(Ok(Message::close()));
+                },
+                None => {
+
+                }
+            }
+        }
+        users.write().await.remove(&uuid);
+    }
+
+    block_on(close_sockets(users, suuid));
+}
+
+async fn user_connected(uuid_of_user: String, ws: WebSocket, users: Users, rconn: redis::aio::MultiplexedConnection) {
+    match check_key_exists_multiplexed(rconn.clone(), &"active".to_string(), &uuid_of_user).await {
         Ok(true) => {},
         _ => {
             ws.close();
@@ -42,17 +67,13 @@ async fn user_connected(id: String, ws: WebSocket, users: Users, rconn: redis::a
 
     let (conn_tx, mut conn_rx) = ws.split();
     let (tx, mut rx) = mpsc::unbounded_channel();
-    let uuid_of_user = Uuid::new_v4();
 
-    users.write().await.insert(uuid_of_user, tx.clone());
+    {
+        users.write().await.insert(uuid_of_user.clone(), tx.clone());
+    }
 
     tokio::task::spawn(rx.forward(conn_tx).map(move |result| {
-        let user = uuid_of_user.clone();
-        if let Err(e) = result {
-            eprintln!("[Conn task] websocket send error: {} {}", e, user);
-        } else {
-            eprintln!("[Conn task] Websocket forward successful. {}", user);
-        }
+        eprintln!("[Conn task] websocket send error: {:?}", result.unwrap());
     }));
 
     while let Some(result) = conn_rx.next().await {
@@ -73,7 +94,7 @@ async fn user_connected(id: String, ws: WebSocket, users: Users, rconn: redis::a
         broadcast_message(msg, users.clone()).await;
     }
 
-    users.write().await.remove(&uuid_of_user);
+    users.write().await.remove(&uuid_of_user.to_string());
 }
 
 #[tokio::main]
@@ -113,8 +134,17 @@ async fn main() {
         .and(with_db_multiplexd_aio(c.clone()))
         .and(json_body_register())
         .and_then(|rconn: redis::aio::MultiplexedConnection, message: Register| {
-            println!("ws: user register {:?}", message.name);
             register_message_handler(message, rconn)
+    }).with(cors.clone());
+
+    let unregister = warp::path("unregister")
+        .and(warp::post())
+        .and(with_db_multiplexd_aio(c.clone()))
+        .and(json_body_unregister())
+        .and(users_filterized.clone())
+        .and_then(|rconn: redis::aio::MultiplexedConnection, u: UnRegister, users: Users| {
+          close_running_sockets(users, u.uuid.clone());
+          unregister_message_handler(rconn, u)
     }).with(cors.clone());
 
     let ws_route = warp::path("ws")
@@ -131,7 +161,11 @@ async fn main() {
 
     let options_only = warp::options().map(warp::reply).with(cors.clone());
 
-    warp::serve(ws_route.or(broadcast.or(register.or(options_only))))
+    warp::serve(
+        ws_route.or(
+            broadcast.or(
+                register.or(
+                    unregister.or(options_only)))))
         .run(([127, 0, 0, 1], 3030))
         .await;
 }
