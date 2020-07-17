@@ -38,7 +38,10 @@ In rust, async & await would need a lot of practise and in the folder you would 
   - websockets based on tokio-tungstenite ( comes with warp )
   - Cors filtering
   - Redis interfaces with multiplexed connections.
-- [Someday] gRPC
+- [WIP] gRPC tonic implementation for totp verification
+  - tonic based grpc server generation
+  - totp verification based on google authorization package
+  - APIs for register and verify totp
 
 ## QA
 - Quickcheck - sample usage for automated unit testing based on function template.
