@@ -21,6 +21,7 @@ message User {
 
 message Totp {
   string input = 1;
+  string token = 2;
 }
 
 message AuthenticationResult {
@@ -28,6 +29,7 @@ message AuthenticationResult {
     MAYBE = 0;
     SUCCESS = 1;
     FAILURE = 2;
+    TOKEN_ERROR = 3;
   }
 
   Result res = 1;
@@ -42,4 +44,5 @@ message RegistrationResult {
 
   Result res = 1;
   string qr_code = 2;
+  string token = 3;
 }

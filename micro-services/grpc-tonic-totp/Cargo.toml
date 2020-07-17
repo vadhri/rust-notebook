@@ -20,15 +20,14 @@ tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "m
 futures = { version = "0.3", default-features = false, features = ["alloc"] }
 async-stream = "0.2"
 tower = "0.3"
-# Required for wellknown types
 prost-types = "0.6"
-# Hyper example
+jsonwebtoken = "7"
 hyper = "0.13"
 warp = { version = "0.2", default-features = false }
 http = "0.2"
 http-body = "0.3"
 pin-project = "0.4.17"
-
+serde = {version = "1.0", features = ["derive"] }
 mongodb = "1.0.0"
 
 [build-dependencies]
