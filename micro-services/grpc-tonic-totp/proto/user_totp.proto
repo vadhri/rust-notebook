@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.helloworld";
+option java_outer_classname = "HelloWorldProto";
+
+package register_and_identify;
+
+// The greeting service definition.
+service ValidateTotp {
+  // Sends a greeting
+  rpc Validate (Totp) returns (AuthenticationResult) {}
+  rpc Register (User) returns (RegistrationResult) {}
+}
+
+message User {
+  string firstname = 1;
+  string lastname = 2;
+  string email = 3;
+}
+
+message Totp {
+  string input = 1;
+}
+
+message AuthenticationResult {
+  enum Result {
+    MAYBE = 0;
+    SUCCESS = 1;
+    FAILURE = 2;
+  }
+
+  Result res = 1;
+}
+
+message RegistrationResult {
+  enum Result {
+    SUCCESS = 0;
+    EMAIL_EXISTS = 1;
+    INSUFFICIENT_INFO = 2;
+  }
+
+  Result res = 1;
+  string qr_code = 2;
+}

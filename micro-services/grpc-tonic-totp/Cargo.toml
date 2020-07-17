@@ -1,0 +1,36 @@
+[package]
+name = "grpc-tonic"
+version = "0.1.0"
+authors = ["Venkata Ratnam Vadhri <vadhrivenkata.ratnam@nagra.com>"]
+edition = "2018"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
+
+[dependencies]
+tonic = "0.2.1"
+google-authenticator = "0.2.0"
+prost = "0.6.1"
+tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
+futures = { version = "0.3", default-features = false, features = ["alloc"] }
+async-stream = "0.2"
+tower = "0.3"
+# Required for wellknown types
+prost-types = "0.6"
+# Hyper example
+hyper = "0.13"
+warp = { version = "0.2", default-features = false }
+http = "0.2"
+http-body = "0.3"
+pin-project = "0.4.17"
+
+mongodb = "1.0.0"
+
+[build-dependencies]
+tonic-build = { version = "0.2.0", features = ["prost"] }
+prost = "0.6.1"
