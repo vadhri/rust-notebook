@@ -1,0 +1,11 @@
+[package]
+name = "apache-arrow-csv"
+version = "0.1.0"
+authors = ["Venkata Ratnam Vadhri <vadhrivenkata.ratnam@nagra.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+arrow = { git = "https://github.com/apache/arrow/" }
+datafusion = { git = "https://github.com/apache/arrow/" }

@@ -43,6 +43,10 @@ In rust, async & await would need a lot of practise and in the folder you would 
   - totp verification based on google authorization package
   - APIs for register and verify totp
 
+## Data
+- Apache arrow rust library - Simple SQL command.
+  - Simple data loading from SQL command using arrow library. 
+
 ## QA
 - Quickcheck - sample usage for automated unit testing based on function template.
 - Criterion - Sample usage for collecting benchmarks for sample runs of reading, re-sizing and saving two image variants.
