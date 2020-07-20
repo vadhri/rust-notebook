@@ -38,14 +38,16 @@ In rust, async & await would need a lot of practise and in the folder you would 
   - websockets based on tokio-tungstenite ( comes with warp )
   - Cors filtering
   - Redis interfaces with multiplexed connections.
-- [WIP] gRPC tonic implementation for totp verification
+- gRPC tonic implementation for totp verification
   - tonic based grpc server generation
   - totp verification based on google authorization package
   - APIs for register and verify totp
+  - A sample web app to demonstrate usage based on grpc-web
+  - [Envoy Proxy](https://www.envoyproxy.io/) configuration for interfacing between server and client.
 
 ## Data
 - Apache arrow rust library - Simple SQL command.
-  - Simple data loading from SQL command using arrow library. 
+  - Simple data loading from SQL command using arrow library.
 
 ## QA
 - Quickcheck - sample usage for automated unit testing based on function template.

@@ -1,0 +1,88 @@
+<html>
+  <head>
+    <title>gRPC sample test application</title>
+    <script src="./dist/main.js" charset="utf-8"></script>
+    <script>
+      function register_user() {
+        let fname = document.getElementById("fname").value;
+        let lname = document.getElementById("lname").value;
+        let email = document.getElementById("email").value;
+
+        window.register.create_user(fname, lname, email, (status) => {
+          if (status.res == 0) {
+              document.getElementById("registration_id").style.display = 'block';
+              document.getElementById("error").innerHTML = "";
+              document.getElementById("qrcode").style.display = '';
+              document.getElementById("qrcode").src = status.qrcode;
+              document.getElementById("otp").style.display = '';
+          } else if (status.res == 1) {
+            document.getElementById("qrcode").style.display = 'none';
+            document.getElementById("registration_id").style.display = 'block';
+            document.getElementById("error").innerHTML = "Email already exists!"
+          } else {
+            document.getElementById("qrcode").style.display = 'none';
+            document.getElementById("registration_id").style.display = 'block';
+            document.getElementById("error").innerHTML = "Some thing is wrong!"
+          }
+        });
+      }
+
+      function vaidate_totp() {
+        let code = document.getElementById("code").value;
+        window.register.validate_totp(code, window.register.token, (status) => {
+          if (status.res == 1) {
+            document.getElementById("code_validation_res").innerHTML = "OTP correct!";
+          } else {
+            document.getElementById("code_validation_res").innerHTML = "OTP incorrect!";
+          }
+        });
+      }
+    </script>
+    <style>
+        #register, #registration_id, #totp, #otp {
+          align-items: center;
+          text-align: center;
+          width: 100%;
+          height: auto;
+        }
+    </style>
+
+  </head>
+
+  <body>
+    <div id="register">
+    <h2>TOTP demo</h2>
+
+      <div id="form">
+        <label for="fname">First name</label><br>
+        <input type="text" id="fname" name="fname"><br>
+        <p/>
+        <label for="lname">Last name</label><br>
+        <input type="text" id="lname" name="lname"><br>
+        <p/>
+        <label for="email">Email</label><br>
+        <input type="text" id="email" name="email"><br><br>
+        <input type="submit" value="Register" onclick="register_user()">
+      </div>
+
+      <div id="registration_status">
+        <div id="registration_id" style="display: none;">
+          <img id="qrcode"></img>
+          <text id="error"></text>
+        </div>
+      </div>
+
+      <div id="totp">
+        <div id="otp" style="display: none;">
+          <h3> Enter otp code </h3>
+          <input type="text" id="code"></input>
+          <input type="submit" value="Validate" onclick="vaidate_totp()"><br><br>
+          <div id="code_validation_res">Input code to know the result</div>
+        </div>
+      </div>
+
+
+  </div>
+  </body>
+
+</html>
