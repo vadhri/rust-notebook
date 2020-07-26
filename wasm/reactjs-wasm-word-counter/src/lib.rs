@@ -2,6 +2,7 @@ mod utils;
 
 use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
+use regex::Regex;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -14,13 +15,26 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize)]
 pub struct Count {
     values: HashMap<String, i32>,
+    langauge: String,
     no_of_values: i32
 }
 
+use whatlang::{detect, Lang, Script};
+
+
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
 impl Count {
-    pub fn new(values: HashMap<String, i32>, no_of_values: i32) -> Count {
+    pub fn new(values: HashMap<String, i32>, lang: String, no_of_values: i32) -> Count {
         Count {
             values: values,
+            langauge: lang,
             no_of_values: no_of_values
         }
     }
@@ -58,27 +72,29 @@ pub fn count_words(i: &str) -> JsValue {
     let mut values = HashMap::new();
     let mut no_of_values = 0;
 
-    let input = i.to_string().replace("\"", "")
-        .replace(".", "")
-        .replace("!", "")
-        .replace("'", "")
-        .replace(",", "");
+    let special_chars = Regex::new("[~`!@#$%^&*()_+{}|;:\"'><.,/?>]").unwrap();
+    let input = special_chars.replace_all(i, "");
+    let info = detect(&input).unwrap();
+
+    log(&input);
+    log(info.lang().name());
 
     for word in input.split(' ') {
         no_of_values += 1;
         if word.len() > 0 {
-            if values.contains_key(word) {
-                if let Some(word) = values.get_mut(word) {
-                    *word += 1i32;
+            if values.contains_key(&word.to_lowercase()) {
+                if let Some(mutable_word) = values.get_mut(&word.to_lowercase()) {
+                    *mutable_word += 1i32;
                 }
             } else {
-                values.insert(word.to_string(), 1i32);
+                values.insert(word.to_string().to_lowercase(), 1i32);
             }
         }
     }
 
     let ret = Count {
        values: values.clone(),
+       langauge: info.lang().name().to_string(),
        no_of_values: no_of_values
    };
 

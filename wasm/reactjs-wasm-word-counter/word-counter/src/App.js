@@ -30,6 +30,7 @@ function App() {
   const handleChangingText = async (txt) => {
     let ret = wasmlib.wasm.count_words(txt);
     let values = [];
+
     Object.entries(ret.values).map( o => {
       values.push({
         word: o[0],
@@ -37,10 +38,12 @@ function App() {
       })
     });
 
+    console.log(ret.langauge);
+
     setResults({
       columns: [
         {
-          label: 'Word',
+          label: ret.langauge + ' Word',
           field: 'word',
           sort: 'asc',
           width: 150
@@ -57,7 +60,7 @@ function App() {
 
   return (
       <MDBContainer>
-        <p className="h2 text-center py-4">WASM - word counter</p>
+        <p className="h2 text-center py-4">How many words was that ?</p>
       <MDBInput className="py-4" type="textarea" label="Please enter text in the area below" rows="5" columns="150" getValue={handleChangingText}/>
       <MDBDataTable
         striped
