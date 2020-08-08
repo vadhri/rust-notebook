@@ -18,6 +18,7 @@ Thanks to the original mmap [lib](https://crates.io/crates/memmap).
 
 #### General performance seems to be of the order below.
 
+##### Debug 
 - count_test_simple_nested_json: 256.37µs seconds for counting 1 records
 - count_test_simple_with_filter_json: 322.471µs seconds.
 - count_test_simple_nested_with_filter_json: 396.664µs seconds
@@ -28,3 +29,15 @@ Thanks to the original mmap [lib](https://crates.io/crates/memmap).
 - count_with_filter_airports: 3.913697422s seconds for filtering 57265 records
 - filter_out_airports_in_country 3.91415908s: seconds for filtering 57265 records
 - filter_out_airports_no_results: 3.922528546s seconds for filtering 57265 records
+
+##### Release 
+- count_test_simple_nested_json: 147.219µs seconds for counting 1 records
+- count_test_simple_with_filter_json: 164.697µs seconds.
+- count_test_simple_json: 151.941µs seconds for counting 1 records
+- count_test_simple_nested_with_filter_json: 339.415µs seconds
+- filter_out_json_no_results: 631.994µs seconds.
+- filter_out_json_by_value: 888.325µs seconds.
+- count_airports: 20.457554ms seconds.
+- filter_out_airports_no_results: 347.208947ms seconds.
+- count_with_filter_airports: 349.70095ms seconds.
+- filter_out_airports_in_country 354.040548ms: seconds for filtering 57265 records
