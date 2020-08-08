@@ -48,7 +48,10 @@ mod tests {
         let _res = mmap_json_file::count::<TestSimple>(d.to_str().unwrap().to_string());
         let end = Instant::now();
 
-        println!("count_test_simple_json: {:?} seconds for counting 1 records", end - start);
+        println!(
+            "count_test_simple_json: {:?} seconds for counting 1 records",
+            end - start
+        );
 
         assert_eq!(_res.unwrap(), 1);
     }
@@ -62,7 +65,10 @@ mod tests {
         let _res = mmap_json_file::count::<TestSimpleCompound>(d.to_str().unwrap().to_string());
         let end = Instant::now();
 
-        println!("count_test_simple_nested_json: {:?} seconds for counting 1 records", end - start);
+        println!(
+            "count_test_simple_nested_json: {:?} seconds for counting 1 records",
+            end - start
+        );
 
         assert_eq!(_res.unwrap(), 1);
     }
@@ -79,7 +85,10 @@ mod tests {
         );
         let end = Instant::now();
 
-        println!("count_test_simple_with_filter_json: {:?} seconds.", end - start);
+        println!(
+            "count_test_simple_with_filter_json: {:?} seconds.",
+            end - start
+        );
 
         assert_eq!(_res.unwrap(), 1);
     }
@@ -91,22 +100,24 @@ mod tests {
         let filter = |record: TestSimpleCompound| -> bool { record.f.unwrap() == "g" };
 
         let start = Instant::now();
-        let _res = mmap_json_file::count_with_filter::<TestSimpleCompound, Box<dyn Fn(TestSimpleCompound) -> bool>>(
-            d.to_str().unwrap().to_string(),
-            Box::new(filter),
-        );
+        let _res = mmap_json_file::count_with_filter::<
+            TestSimpleCompound,
+            Box<dyn Fn(TestSimpleCompound) -> bool>,
+        >(d.to_str().unwrap().to_string(), Box::new(filter));
         let end = Instant::now();
 
-        println!("count_test_simple_nested_with_filter_json: {:?} seconds", end - start);
+        println!(
+            "count_test_simple_nested_with_filter_json: {:?} seconds",
+            end - start
+        );
 
         assert_eq!(_res.unwrap(), 1);
     }
 
-
     #[test]
     fn filter_out_airports_in_country() {
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        d.push("data/airports.json");
+        d.push("data/airports-dup.json");
 
         let filter = |record: AirportCodes| -> bool { record.iso_country.unwrap() == "IN" };
         let start = Instant::now();
@@ -117,7 +128,10 @@ mod tests {
         );
         let end = Instant::now();
 
-        println!("filter_out_airports_in_country {:?}: seconds for filtering 57265 records", end - start);
+        println!(
+            "filter_out_airports_in_country {:?}: seconds for filtering 4065815 records",
+            end - start
+        );
     }
 
     #[test]
@@ -158,7 +172,7 @@ mod tests {
     #[test]
     fn filter_out_airports_no_results() {
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        d.push("data/airports.json");
+        d.push("data/airports-dup.json");
 
         let filter = |record: AirportCodes| -> bool { record.iso_country.unwrap() == "NoCountry" };
 
@@ -171,13 +185,12 @@ mod tests {
         let end = Instant::now();
 
         println!("filter_out_airports_no_results: {:?} seconds.", end - start);
-
     }
 
     #[test]
     fn count_with_filter_airports() {
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        d.push("data/airports.json");
+        d.push("data/airports-dup.json");
 
         let filter = |record: AirportCodes| -> bool { record.iso_country.unwrap() == "IN" };
 
@@ -190,13 +203,13 @@ mod tests {
 
         println!("count_with_filter_airports: {:?} seconds.", end - start);
 
-        assert_eq!(_res.unwrap(), 341);
+        assert_eq!(_res.unwrap(), 24211);
     }
 
     #[test]
     fn count_airports() {
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        d.push("data/airports.json");
+        d.push("data/airports-dup.json");
 
         let filter = |record: AirportCodes| -> bool { record.iso_country.unwrap() == "IN" };
 
@@ -206,6 +219,46 @@ mod tests {
 
         println!("count_airports: {:?} seconds.", end - start);
 
-        assert_eq!(_res.unwrap(), 57265);
+        assert_eq!(_res.unwrap(), 4065815);
+    }
+
+    #[test]
+    fn write_distinct_fields_large_json() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("data/airports-dup.json");
+
+        let filter = |record: AirportCodes| -> String { record.iso_country.unwrap() };
+
+        let start = Instant::now();
+        let _res = mmap_json_file::distinct_of_field::<AirportCodes, Box<dyn Fn(AirportCodes) -> String>>(
+            d.to_str().unwrap().to_string(),
+            Box::new(filter),
+            "distinct_test_simple.json".to_string(),
+        );
+        let end = Instant::now();
+
+        println!("write_distinct_fields: {:?} seconds.", end - start);
+
+        assert_eq!(_res.unwrap(), 243);
+    }
+
+    #[test]
+    fn write_distinct_fields() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("data/test_simple.json");
+
+        let filter = |record: TestSimple| -> String { record.a.unwrap() };
+
+        let start = Instant::now();
+        let _res = mmap_json_file::distinct_of_field::<TestSimple, Box<dyn Fn(TestSimple) -> String>>(
+            d.to_str().unwrap().to_string(),
+            Box::new(filter),
+            "distinct_test_simple.json".to_string(),
+        );
+        let end = Instant::now();
+
+        println!("write_distinct_fields: {:?} seconds.", end - start);
+
+        assert_eq!(_res.unwrap(), 1);
     }
 }

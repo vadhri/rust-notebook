@@ -13,7 +13,7 @@ use serde::de::DeserializeOwned;
 use serde_json::Result;
 use std::fs::File;
 use std::io::prelude::*;
-use std::thread;
+use std::{collections::HashMap, thread};
 
 use failure::Fail;
 
@@ -45,8 +45,32 @@ pub enum ReturnValues {
 /// # Example usage
 ///
 /// ```
+///
+/// use mmap_json_file;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimple {
+///     a: Option<String>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleNested {
+///     b: Option<TestSimple>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleCompound {
+///     a: Option<TestSimpleNested>,
+///     f: Option<String>,
+/// }
+///
+/// let filter = |record: TestSimple| -> bool { record.a.unwrap() == "b" };
+///
 /// let _res = mmap_json_file::filter::<TestSimple, Box<dyn Fn(TestSimple) -> bool>>(
-///     d.to_str().unwrap().to_string(),
+///     "data/test_simple.json".to_string(),
 ///     Box::new(filter),
 ///     "output.json".to_string(),
 /// );
@@ -171,10 +195,33 @@ where
 /// # Example usage
 ///
 /// ```
+/// use mmap_json_file;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimple {
+///     a: Option<String>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleNested {
+///     b: Option<TestSimple>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleCompound {
+///     a: Option<TestSimpleNested>,
+///     f: Option<String>,
+/// }
+///
+/// let filter = |record: TestSimple| -> bool { record.a.unwrap() == "b" };
+///
 /// let _res = mmap_json_file::count_with_filter::<
-///     AirportCodes,
-///    Box<dyn Fn(AirportCodes) -> bool>,
-/// >(d.to_str().unwrap().to_string(), Box::new(filter));
+///     TestSimple,
+///    Box<dyn Fn(TestSimple) -> bool>,
+/// >("data/test_simple.json".to_string(), Box::new(filter));
 /// ```
 ///
 
@@ -245,10 +292,33 @@ where
 /// # Example usage
 ///
 /// ```
+/// use mmap_json_file;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimple {
+///     a: Option<String>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleNested {
+///     b: Option<TestSimple>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleCompound {
+///     a: Option<TestSimpleNested>,
+///     f: Option<String>,
+/// }
+///
+/// let filter = |record: TestSimple| -> bool { record.a.unwrap() == "b" };
+///
 /// let _res = mmap_json_file::count_with_filter::<
-///     AirportCodes,
-///    Box<dyn Fn(AirportCodes) -> bool>,
-/// >(d.to_str().unwrap().to_string(), Box::new(filter));
+///     TestSimple,
+///    Box<dyn Fn(TestSimple) -> bool>,
+/// >("data/test_simple.json".to_string(), Box::new(filter));
 /// ```
 ///
 
@@ -279,4 +349,142 @@ where
     }
 
     Ok(count)
+}
+
+/// Disctinct values of the contents of a json field.
+///
+/// * `f` Filename and full accesislbe path of the input json file
+/// * `filter` A closure that can handle an input parameter of type T and provide the field with distincts.
+/// * `o` Filename and full accesislbe path of the output json file.
+///
+/// # Input types
+///
+/// * `T` The type of the structure.
+/// * `F` Closure template with input function type.
+///
+/// # Return
+///
+/// * `count` No of records that match the filter.
+///
+/// # Example usage
+///
+/// ```
+/// use mmap_json_file;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimple {
+///     a: Option<String>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleNested {
+///     b: Option<TestSimple>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleCompound {
+///     a: Option<TestSimpleNested>,
+///     f: Option<String>,
+/// }
+///
+/// let filter = |record: TestSimple| -> String { record.a.unwrap() };
+///
+/// let _res = mmap_json_file::distinct_of_field::<
+///     TestSimple,
+///    Box<dyn Fn(TestSimple) -> String>,
+/// >("data/test_simple.json".to_string(), Box::new(filter), "output".to_string());
+/// ```
+///
+
+pub fn distinct_of_field<'a, T: 'static, F>(f: String, filter: F, o: String) -> Result<i32>
+where
+    T: DeserializeOwned + std::fmt::Debug + Clone + Send + serde::Serialize,
+    F: Fn(T) -> String,
+{
+    let file = File::open(f).expect("failed to open the input file.");
+    let mmap = unsafe { Mmap::map(&file).expect("failed to map the file") };
+    let mut q = Vec::new();
+
+    let (sender, receiver) = unbounded::<String>();
+    let (sender_write_count, receiver_write_count) = bounded(1);
+
+    let mut output = File::create(o.clone()).unwrap();
+    let mut vect = Vec::new();
+    let mut hm = HashMap::new();
+
+    let writer = thread::spawn(move || -> Result<()> {
+        while let record = receiver.recv() {
+            match record {
+                Err(_reason) => {
+                    break;
+                }
+                Ok(value) => {
+                    match hm.contains_key(&value) {
+                        true  => {
+                            // ignore the value
+                        },
+                        false => {
+                            hm.insert(value, true);
+                        }
+                    }
+
+                }
+            }
+        }
+
+        serde_json::to_writer::<File, Vec<&String>>(output, &hm.keys().collect()).expect("Cannot write to destination");
+
+        match sender_write_count.send(hm.keys().len() as i32) {
+            Ok(_value) => Ok(()),
+            Err(_reason) => {
+                /* nothing to do with this error now! */
+                Ok(())
+            }
+        }
+    });
+
+    for letter in mmap.iter() {
+        match *letter as char {
+            '}' => {
+                q.pop();
+                vect.push(*letter as char);
+
+                if q.len() == 0 {
+                    vect.remove(0);
+
+                    let s: String = vect.clone().into_iter().collect::<String>();
+
+                    let deserialized: T = serde_json::from_str(&s).unwrap();
+                    let s = filter(deserialized.clone());
+
+                    if s.len() > 0 {
+                        sender.send(s).expect("Internal error!");
+                    }
+
+                    vect.clear();
+                    q.clear();
+                }
+            },
+            '\n' => {
+
+            },
+            '\t' => {
+
+            },
+            '{' => {
+                vect.push(*letter as char);
+                q.push(*letter as char);
+            }
+            _ => {
+                vect.push(*letter as char);
+            }
+        }
+    }
+
+    drop(sender);
+    let _msg = writer.join();
+    Ok(receiver_write_count.recv().unwrap())
 }
