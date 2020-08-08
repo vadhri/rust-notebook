@@ -1,0 +1,17 @@
+[package]
+name = "mmap_json_file"
+version = "0.1.0"
+authors = ["vadhri <saptarchi@outlook.com>"]
+edition = "2018"
+description = "A library to parse, count, filter JSON files using memory mapped io library."
+keywords = ["json", "memory", "mapping", "io"]
+categories = ["data-structures"]
+
+[dependencies]
+memmap = "0.7.0"
+serde = { version = "1.0.114", features = ["derive"] }
+serde_json = "1.0.57"
+crossbeam = "0.7"
+failure_derive = "0.1.8"
+failure = "0.1.8"
+time = "*"
