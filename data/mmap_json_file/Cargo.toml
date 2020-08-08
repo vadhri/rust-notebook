@@ -6,6 +6,7 @@ edition = "2018"
 description = "A library to parse, count, filter JSON files using memory mapped io library."
 keywords = ["json", "memory", "mapping", "io"]
 categories = ["data-structures"]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 memmap = "0.7.0"
@@ -14,4 +15,4 @@ serde_json = "1.0.57"
 crossbeam = "0.7"
 failure_derive = "0.1.8"
 failure = "0.1.8"
-time = "*"
+time = "0.2.16"
