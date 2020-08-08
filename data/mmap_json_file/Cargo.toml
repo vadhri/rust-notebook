@@ -1,6 +1,6 @@
 [package]
 name = "mmap_json_file"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["vadhri <saptarchi@outlook.com>"]
 edition = "2018"
 description = "A library to parse, count, filter JSON files using memory mapped io library."

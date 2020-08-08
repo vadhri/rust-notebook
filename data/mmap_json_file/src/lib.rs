@@ -1,3 +1,7 @@
+//! # mmap_json_file
+//!
+//! `mmap_json_file` is a collection of utilities to filter and count ( with and without filter )
+//!
 extern crate memmap;
 use crossbeam;
 use crossbeam::crossbeam_channel::bounded;
@@ -24,6 +28,29 @@ pub enum ReturnValues {
     #[fail(display = "An json error has occurred: {}", _0)]
     Json(#[fail(cause)] serde_json::Error),
 }
+
+/// Filter the contents of a json file with filter specified and write the output to file specified.
+///
+/// # Arguments
+///
+/// * `f` Filename and full accesislbe path of the input json file
+/// * `filter` A closure that can handle an input parameter of type T.
+/// * `o` Filename and full accesislbe path of the output json file.
+///
+/// # Input types
+///
+/// * `T` The type of the structure.
+/// * `F` Closure template with input function type.
+///
+/// # Example usage
+///
+/// ```
+/// let _res = mmap_json_file::filter::<TestSimple, Box<dyn Fn(TestSimple) -> bool>>(
+///     d.to_str().unwrap().to_string(),
+///     Box::new(filter),
+///     "output.json".to_string(),
+/// );
+/// ```
 
 pub fn filter<'a, T: 'static + Default, F>(f: String, filter: F, o: String) -> Result<ReturnValues>
 where
@@ -125,6 +152,32 @@ where
     Ok(ReturnValues::Success(receiver_write_count.recv().unwrap()))
 }
 
+/// Count the contents of a json file with filter specified.
+///
+/// # Arguments
+///
+/// * `f` Filename and full accesislbe path of the input json file
+/// * `filter` A closure that can handle an input parameter of type T.
+///
+/// # Return
+///
+/// * `count` No of records that match the filter.
+///
+/// # Input types
+///
+/// * `T` The type of the structure.
+/// * `F` Closure template with input function type.
+///
+/// # Example usage
+///
+/// ```
+/// let _res = mmap_json_file::count_with_filter::<
+///     AirportCodes,
+///    Box<dyn Fn(AirportCodes) -> bool>,
+/// >(d.to_str().unwrap().to_string(), Box::new(filter));
+/// ```
+///
+
 pub fn count_with_filter<'a, T: 'static, F>(f: String, filter: F) -> Result<i32>
 where
     T: DeserializeOwned + std::fmt::Debug + Clone + Send + serde::Serialize,
@@ -174,6 +227,30 @@ where
 
     Ok(count)
 }
+
+/// Count the contents of a json file.
+///
+/// # Arguments
+///
+/// * `f` Filename and full accesislbe path of the input json file
+///
+/// # Return
+///
+/// * `count` No of records that match the filter.
+///
+/// # Input types
+///
+/// * `T` The type of the structure.
+///
+/// # Example usage
+///
+/// ```
+/// let _res = mmap_json_file::count_with_filter::<
+///     AirportCodes,
+///    Box<dyn Fn(AirportCodes) -> bool>,
+/// >(d.to_str().unwrap().to_string(), Box::new(filter));
+/// ```
+///
 
 pub fn count<'a, T: 'static>(f: String) -> Result<i32>
 where
