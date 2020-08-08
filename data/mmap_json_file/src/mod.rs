@@ -1,3 +1,3 @@
-pub mod large_json_file;
+pub mod mmap_json_file;
 
 use lib;

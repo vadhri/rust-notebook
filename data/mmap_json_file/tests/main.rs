@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use large_json_file;
+    use mmap_json_file;
     use serde;
     use serde::{Deserialize, Serialize};
     use std::path::PathBuf;
@@ -45,10 +45,10 @@ mod tests {
         d.push("data/test_simple.json");
 
         let start = Instant::now();
-        let _res = large_json_file::count::<TestSimple>(d.to_str().unwrap().to_string());
+        let _res = mmap_json_file::count::<TestSimple>(d.to_str().unwrap().to_string());
         let end = Instant::now();
 
-        println!("{:?} seconds for counting 1 records", end - start);
+        println!("count_test_simple_json: {:?} seconds for counting 1 records", end - start);
 
         assert_eq!(_res.unwrap(), 1);
     }
@@ -59,10 +59,10 @@ mod tests {
         d.push("data/test_simple_nested.json");
 
         let start = Instant::now();
-        let _res = large_json_file::count::<TestSimpleCompound>(d.to_str().unwrap().to_string());
+        let _res = mmap_json_file::count::<TestSimpleCompound>(d.to_str().unwrap().to_string());
         let end = Instant::now();
 
-        println!("{:?} seconds for counting 1 records", end - start);
+        println!("count_test_simple_nested_json: {:?} seconds for counting 1 records", end - start);
 
         assert_eq!(_res.unwrap(), 1);
     }
@@ -73,13 +73,13 @@ mod tests {
         let filter = |record: TestSimple| -> bool { record.a.unwrap() == "b" };
 
         let start = Instant::now();
-        let _res = large_json_file::count_with_filter::<TestSimple, Box<dyn Fn(TestSimple) -> bool>>(
+        let _res = mmap_json_file::count_with_filter::<TestSimple, Box<dyn Fn(TestSimple) -> bool>>(
             d.to_str().unwrap().to_string(),
             Box::new(filter),
         );
         let end = Instant::now();
 
-        println!("{:?} seconds for counting 1 records", end - start);
+        println!("count_test_simple_with_filter_json: {:?} seconds.", end - start);
 
         assert_eq!(_res.unwrap(), 1);
     }
@@ -91,13 +91,13 @@ mod tests {
         let filter = |record: TestSimpleCompound| -> bool { record.f.unwrap() == "g" };
 
         let start = Instant::now();
-        let _res = large_json_file::count_with_filter::<TestSimpleCompound, Box<dyn Fn(TestSimpleCompound) -> bool>>(
+        let _res = mmap_json_file::count_with_filter::<TestSimpleCompound, Box<dyn Fn(TestSimpleCompound) -> bool>>(
             d.to_str().unwrap().to_string(),
             Box::new(filter),
         );
         let end = Instant::now();
 
-        println!("{:?} seconds for counting 1 records", end - start);
+        println!("count_test_simple_nested_with_filter_json: {:?} seconds", end - start);
 
         assert_eq!(_res.unwrap(), 1);
     }
@@ -110,14 +110,14 @@ mod tests {
 
         let filter = |record: AirportCodes| -> bool { record.iso_country.unwrap() == "IN" };
         let start = Instant::now();
-        let _res = large_json_file::filter::<AirportCodes, Box<dyn Fn(AirportCodes) -> bool>>(
+        let _res = mmap_json_file::filter::<AirportCodes, Box<dyn Fn(AirportCodes) -> bool>>(
             d.to_str().unwrap().to_string(),
             Box::new(filter),
             "filtered_output.json".to_string(),
         );
         let end = Instant::now();
 
-        println!("{:?} seconds for filtering 57265 records", end - start);
+        println!("filter_out_airports_in_country {:?}: seconds for filtering 57265 records", end - start);
     }
 
     #[test]
@@ -126,12 +126,16 @@ mod tests {
         d.push("data/test_simple.json");
 
         let filter = |record: TestSimple| -> bool { record.a.unwrap() == "b" };
+        let start = Instant::now();
 
-        let _res = large_json_file::filter::<TestSimple, Box<dyn Fn(TestSimple) -> bool>>(
+        let _res = mmap_json_file::filter::<TestSimple, Box<dyn Fn(TestSimple) -> bool>>(
             d.to_str().unwrap().to_string(),
             Box::new(filter),
             "filtered_output_test_simple.json".to_string(),
         );
+        let end = Instant::now();
+
+        println!("filter_out_json_by_value: {:?} seconds.", end - start);
     }
 
     #[test]
@@ -140,12 +144,15 @@ mod tests {
         d.push("data/test_simple.json");
 
         let filter = |record: TestSimple| -> bool { record.a.unwrap() == "Nothing" };
-
-        let _res = large_json_file::filter::<TestSimple, Box<dyn Fn(TestSimple) -> bool>>(
+        let start = Instant::now();
+        let _res = mmap_json_file::filter::<TestSimple, Box<dyn Fn(TestSimple) -> bool>>(
             d.to_str().unwrap().to_string(),
             Box::new(filter),
             "filtered_output_test_simple_no_result.json".to_string(),
         );
+        let end = Instant::now();
+
+        println!("filter_out_json_no_results: {:?} seconds.", end - start);
     }
 
     #[test]
@@ -155,11 +162,16 @@ mod tests {
 
         let filter = |record: AirportCodes| -> bool { record.iso_country.unwrap() == "NoCountry" };
 
-        let _res = large_json_file::filter::<AirportCodes, Box<dyn Fn(AirportCodes) -> bool>>(
+        let start = Instant::now();
+        let _res = mmap_json_file::filter::<AirportCodes, Box<dyn Fn(AirportCodes) -> bool>>(
             d.to_str().unwrap().to_string(),
             Box::new(filter),
             "filtered_output_NoCountry.json".to_string(),
         );
+        let end = Instant::now();
+
+        println!("filter_out_airports_no_results: {:?} seconds.", end - start);
+
     }
 
     #[test]
@@ -169,10 +181,14 @@ mod tests {
 
         let filter = |record: AirportCodes| -> bool { record.iso_country.unwrap() == "IN" };
 
-        let _res = large_json_file::count_with_filter::<
+        let start = Instant::now();
+        let _res = mmap_json_file::count_with_filter::<
             AirportCodes,
             Box<dyn Fn(AirportCodes) -> bool>,
         >(d.to_str().unwrap().to_string(), Box::new(filter));
+        let end = Instant::now();
+
+        println!("count_with_filter_airports: {:?} seconds.", end - start);
 
         assert_eq!(_res.unwrap(), 341);
     }
@@ -185,10 +201,10 @@ mod tests {
         let filter = |record: AirportCodes| -> bool { record.iso_country.unwrap() == "IN" };
 
         let start = Instant::now();
-        let _res = large_json_file::count::<AirportCodes>(d.to_str().unwrap().to_string());
+        let _res = mmap_json_file::count::<AirportCodes>(d.to_str().unwrap().to_string());
         let end = Instant::now();
 
-        println!("{:?} seconds for counting 57265 records", end - start);
+        println!("count_airports: {:?} seconds.", end - start);
 
         assert_eq!(_res.unwrap(), 57265);
     }
