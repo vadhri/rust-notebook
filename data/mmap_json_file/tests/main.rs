@@ -129,7 +129,7 @@ mod tests {
         let end = Instant::now();
 
         println!(
-            "filter_out_airports_in_country {:?}: seconds for filtering 4065815 records",
+            "filter_out_airports_in_country {:?}: seconds.",
             end - start
         );
     }
@@ -203,7 +203,7 @@ mod tests {
 
         println!("count_with_filter_airports: {:?} seconds.", end - start);
 
-        assert_eq!(_res.unwrap(), 24211);
+        assert_eq!(_res.unwrap(), 19891);
     }
 
     #[test]
@@ -219,7 +219,7 @@ mod tests {
 
         println!("count_airports: {:?} seconds.", end - start);
 
-        assert_eq!(_res.unwrap(), 4065815);
+        assert_eq!(_res.unwrap(), 3355711);
     }
 
     #[test]
@@ -260,5 +260,63 @@ mod tests {
         println!("write_distinct_fields: {:?} seconds.", end - start);
 
         assert_eq!(_res.unwrap(), 1);
+    }
+
+    #[test]
+    fn test_sum_over_field() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("data/test_simple_sum.json");
+
+        let filter = |record: TestSimple| -> f64 {
+            match record.a {
+                Some(value) => {
+                    match value.parse::<f64>() {
+                        Ok(num) => num as f64,
+                        _ => 0f64
+                    }
+                },
+                _ => 0f64
+            }
+        };
+
+        let start = Instant::now();
+        let _res = mmap_json_file::sum_over_field::<TestSimple, Box<dyn Fn(TestSimple) -> f64>, f64>(
+            d.to_str().unwrap().to_string(),
+            Box::new(filter)
+        );
+        let end = Instant::now();
+
+        println!("test_sum_over_field: {:?} seconds.", end - start);
+
+        assert_eq!(_res.unwrap(), 0.1200000000000001f64);
+    }
+
+    #[test]
+    fn test_sum_over_field_airport_elevation_ft() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("data/airports-dup.json");
+
+        let filter = |record: AirportCodes| -> f64 {
+            match record.elevation_ft {
+                Some(value) => {
+                    match value.parse::<f64>() {
+                        Ok(num) => num as f64,
+                        _ => 0f64
+                    }
+                },
+                _ => 0f64
+            }
+        };
+
+        let start = Instant::now();
+        let _res = mmap_json_file::sum_over_field::<AirportCodes, Box<dyn Fn(AirportCodes) -> f64>, f64>(
+            d.to_str().unwrap().to_string(),
+            Box::new(filter)
+        );
+        let end = Instant::now();
+
+        println!("test_sum_over_field: {:?} seconds.", end - start);
+
+        assert_eq!(_res.unwrap(), 3627266884.0f64);
     }
 }

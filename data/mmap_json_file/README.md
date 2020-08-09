@@ -38,28 +38,31 @@ cargo test --release  -- --nocapture --test-threads 1
 - filter_out_airports_in_country 3.91415908s: seconds for filtering 57265 records
 - filter_out_airports_no_results: 3.922528546s seconds for filtering 57265 records
 
-##### Release (16MB json - 57,265 records)
-- count_test_simple_nested_json: 147.219µs seconds for counting 1 records
-- count_test_simple_with_filter_json: 164.697µs seconds.
-- count_test_simple_json: 151.941µs seconds for counting 1 records
-- count_test_simple_nested_with_filter_json: 339.415µs seconds
-- filter_out_json_no_results: 631.994µs seconds.
-- filter_out_json_by_value: 888.325µs seconds.
-- count_airports: 20.457554ms seconds.
-- filter_out_airports_no_results: 347.208947ms seconds seconds for filtering 57265 records
-- count_with_filter_airports: 349.70095ms seconds seconds for filtering 57265 records
-- filter_out_airports_in_country: 354.040548ms seconds for filtering 57265 records
+##### Release (1.1 GB - appended 16MB json multiple times - 3,355,711 records)
+- count_airports ... count_airports: 1.153728577s seconds.
+- count_test_simple_json ... count_test_simple_json: 105.415µs seconds for counting 1 records
+- count_test_simple_nested_json ... count_test_simple_nested_json: 137.288µs seconds for counting 1 records
+- count_test_simple_nested_with_filter_json ... count_test_simple_nested_with_filter_json: 156.865µs seconds
+- count_test_simple_with_filter_json ... count_test_simple_with_filter_json: 85.541µs seconds.
+- filter_out_json_by_value ... filter_out_json_by_value: 697.84µs seconds.
+- filter_out_json_no_results ... filter_out_json_no_results: 380.902µs seconds.
+- write_distinct_fields ... write_distinct_fields: 576.174µs seconds.
+- test_sum_over_field ... test_sum_over_field: 104.42µs seconds.
+- count_with_filter_airports ... count_with_filter_airports: 17.461620452s seconds.
+- filter_out_airports_in_country ... filter_out_airports_in_country 17.580610223s: seconds.
+- filter_out_airports_no_results ... filter_out_airports_no_results: 17.333596128s seconds.
+- test_sum_over_field_airport_elevation_ft ... test_sum_over_field: 17.291048913s seconds.
+- write_distinct_fields_large_json ... write_distinct_fields: 22.316755059s seconds.
 
-##### Release (1.1 GB - appended 16MB json multiple times - 4,065,815 records)
-- count_airports ... count_airports: 1.079399532s seconds.
-- count_test_simple_json ... count_test_simple_json: 108.995µs seconds for counting 1 records
-- count_test_simple_nested_json ... count_test_simple_nested_json: 73.032µs seconds for counting 1 records
-- count_test_simple_nested_with_filter_json ... count_test_simple_nested_with_filter_json: 96.173µs seconds
-- count_test_simple_with_filter_json ... count_test_simple_with_filter_json: 70.349µs seconds.
-- count_with_filter_airports ... count_with_filter_airports: 20.170824135s seconds.
-- filter_out_airports_in_country ... filter_out_airports_in_country 20.252878728s: seconds for filtering 57265 records
-- filter_out_airports_no_results ... filter_out_airports_no_results: 20.181562593s seconds.
-- filter_out_json_by_value ... filter_out_json_by_value: 547.087µs seconds.
-- filter_out_json_no_results ... filter_out_json_no_results: 490.056µs seconds.
-- write_distinct_fields ... write_distinct_fields: 460.137µs seconds.
-- write_distinct_fields_large_json ... write_distinct_fields: 26.096326613s seconds.
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+##### Doc-tests mmap_json_file
+
+running 5 tests
+test src/lib.rs - count (line 294) ... ok
+test src/lib.rs - count_with_filter (line 197) ... ok
+test src/lib.rs - distinct_of_field (line 371) ... ok
+test src/lib.rs - filter (line 47) ... ok
+test src/lib.rs - sum_over_field (line 508) ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out

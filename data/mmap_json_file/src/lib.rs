@@ -364,7 +364,7 @@ where
 ///
 /// # Return
 ///
-/// * `count` No of records that match the filter.
+/// * `count` No of distinct records found.
 ///
 /// # Example usage
 ///
@@ -487,4 +487,109 @@ where
     drop(sender);
     let _msg = writer.join();
     Ok(receiver_write_count.recv().unwrap())
+}
+/// Sum values of a json field over the entire file.
+///
+/// * `f` Filename and full accesislbe path of the input json file
+/// * `filter` A closure that can handle an input parameter of type T and provide the field with distincts.
+///
+/// # Input types
+///
+/// * `T` The type of the structure.
+/// * `F` Closure template with input function type.
+/// * `U` The type of the result. ( depending on the type of the field being summed over.)
+///
+/// # Return
+///
+/// * `sum` Total sum.
+///
+/// # Example usage
+///
+/// ```
+/// use mmap_json_file;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimple {
+///     a: Option<String>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleNested {
+///     b: Option<TestSimple>,
+///     c: Option<String>,
+/// }
+///
+/// #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+/// struct TestSimpleCompound {
+///     a: Option<TestSimpleNested>,
+///     f: Option<String>,
+/// }
+///
+/// let filter = |record: TestSimple| -> f64 {
+///    match record.a {
+///        Some(value) => {
+///            match value.parse::<f64>() {
+///                Ok(num) => num as f64,
+///                _ => 0f64
+///            }
+///        },
+///        _ => 0f64
+///    }
+/// };
+///
+/// let _res = mmap_json_file::sum_over_field::<TestSimple, Box<dyn Fn(TestSimple) -> f64>, f64>(
+///    "data/test_simple_sum.json".to_string(),
+///    Box::new(filter)
+/// );
+
+pub fn sum_over_field<'a, T: 'static, F, U>(f: String, filter: F) -> Result<U>
+where
+    T: DeserializeOwned + std::fmt::Debug + Clone + Send + serde::Serialize,
+    F: Fn(T) -> U,
+    U: Default + std::ops::AddAssign
+{
+    let file = File::open(f).expect("failed to open the file");
+    let mmap = unsafe { Mmap::map(&file).expect("failed to map the file") };
+    let mut count:U = U::default();
+    let mut vect = Vec::new();
+
+    let mut q = Vec::new();
+
+    for letter in mmap.iter() {
+        match *letter as char {
+            '}' => {
+                q.pop();
+                vect.push(*letter as char);
+
+                if q.len() == 0 {
+                    vect.remove(0);
+
+                    let s: String = vect.clone().into_iter().collect::<String>();
+
+                    let deserialized: T = serde_json::from_str(&s).unwrap();
+                    count += filter(deserialized.clone());
+
+                    vect.clear();
+                    q.clear();
+                }
+            },
+            '\n' => {
+
+            },
+            '\t' => {
+
+            },
+            '{' => {
+                vect.push(*letter as char);
+                q.push(*letter as char);
+            }
+            _ => {
+                vect.push(*letter as char);
+            }
+        }
+    }
+
+    Ok(count)
 }
