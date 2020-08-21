@@ -1,1 +1,1 @@
-Please feel free to add more working projects for any one who wants to contribute. Please do note that, i can take the final call to merge something to the main branch. 
+Any contributors are welcome if they want to modify any existing parts to make them better ( there is always room for something better ) and any thing new and from distinct fields. 
