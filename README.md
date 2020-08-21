@@ -48,10 +48,10 @@ In rust, async & await would need a lot of practise and in the folder you would 
 ## Data
 - Apache arrow rust library - Simple SQL command.
   - Simple data loading from SQL command using arrow library.
-- MMAP json file 
+- MMAP json file
   - Memory mapped I/O for reading (ideally large files)
-  - Filter json with closure and save the outcome to files. 
-  - Count json records with/without filters. 
+  - Filter json with closure and save the outcome to files.
+  - Count json records with/without filters.
 ## QA
 - Quickcheck - sample usage for automated unit testing based on function template.
 - Criterion - Sample usage for collecting benchmarks for sample runs of reading, re-sizing and saving two image variants.
@@ -65,3 +65,6 @@ In rust, async & await would need a lot of practise and in the folder you would 
   - wasm generation from rust.
   - Include wasm into the reactjs application
   - mdbreact to build the simple ui interface.
+
+### serverless
+- A simple code to use aws lambda run time environment to do base64 encoding of a string 
